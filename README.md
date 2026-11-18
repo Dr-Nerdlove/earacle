@@ -49,8 +49,11 @@ Every pull request and every change on `main` builds a debug APK in GitHub Actio
    get the `.apk`.
 2. Install it on your own phone, for example with `adb install app-debug.apk`.
 
-Each build is signed with a temporary debug key that changes from run to run. If Android refuses to install
-a newer build over an older one, uninstall the old one first (this deletes the app's data).
+Builds are signed with a fixed key kept in the repository's GitHub secrets `EARACLE_KEYSTORE_BASE64` and
+`EARACLE_KEYSTORE_PASSWORD`, so a newer build installs over the old one and keeps the app's data. Only the
+first build with this key (replacing an app installed from an earlier build) needs the old app uninstalled
+once. If the secrets are missing, CI uses a throwaway key and shows a warning. Keep a backup of the keystore
+and its password outside GitHub (GitHub secrets cannot be read back).
 
 ## Development
 

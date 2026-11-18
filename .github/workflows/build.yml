@@ -26,7 +26,25 @@ jobs:
           java-version: 17
       # Also validates the Gradle wrapper jar
       - uses: gradle/actions/setup-gradle@v6
+      # The keystore comes from repository secrets and only exists on the runner during the build.
+      - name: Prepare signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.EARACLE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.EARACLE_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::warning::Signing secrets not set: this APK uses a throwaway debug key and cannot be installed over a build signed with the fixed key."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/earacle-signing.p12"
+          echo "EARACLE_KEYSTORE_FILE=$RUNNER_TEMP/earacle-signing.p12" >> "$GITHUB_ENV"
+          echo "EARACLE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
       - run: ./gradlew assembleDebug --stacktrace
+      # Prints the certificate fingerprint (public, not secret): it must stay the same from run to run.
+      - name: Show signing certificate
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)apksigner
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/*.apk | grep -E "SHA-256|DN"
       - uses: actions/upload-artifact@v7
         with:
           name: earacle-debug-apk
