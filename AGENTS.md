@@ -208,16 +208,18 @@ missing, with a recommendation, and let the people choose.
   `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
   Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
   `gradle/wrapper/gradle-wrapper.properties`.
-- **Build and test:** `.github/workflows/build.yml` runs `./gradlew assembleDebug` on every push and pull
-  request (and by hand via "Run workflow") and uploads the debug APK as the artifact `earacle-debug-apk`
-  (kept 30 days; on the run's page under "Artifacts", downloaded as a zip). Signing: CI signs the debug
-  APK with a fixed key (PKCS12, alias `earacle`, same password for store and key) from the repository
-  secrets `EARACLE_KEYSTORE_BASE64` and `EARACLE_KEYSTORE_PASSWORD`, passed to Gradle as
-  `EARACLE_KEYSTORE_FILE` / `EARACLE_KEYSTORE_PASSWORD`; the step "Show signing certificate" prints its
-  SHA-256 fingerprint, which must not change between runs. Without the secrets the throwaway debug key is
-  used (CI warns), and such an APK cannot update one signed with the fixed key. The keystore is never
-  committed; the owner keeps a backup outside GitHub. No automated tests yet. Recognition, microphone, sync
-  and the UI can only be checked on a real phone; say so when reporting.
+- **Build and test:** `.github/workflows/build.yml` runs `./gradlew assembleDebug` on every pull request
+  and every push to `main` (and by hand via "Run workflow"; a branch without a pull request is not built)
+  and uploads the debug APK as the artifact `earacle-debug-apk` (kept 30 days; on the run's page under
+  "Artifacts", downloaded as a zip). Signing: CI signs the debug APK with a fixed key (PKCS12, alias
+  `earacle`, same password for store and key) from the repository secrets `EARACLE_KEYSTORE_BASE64` and
+  `EARACLE_KEYSTORE_PASSWORD`, passed to Gradle as `EARACLE_KEYSTORE_FILE` / `EARACLE_KEYSTORE_PASSWORD`;
+  the step "Show signing certificate" prints its SHA-256 fingerprint, which must not change between runs.
+  Repository secrets, not environment secrets: environments are not available in private repositories on a
+  free plan (source: `github/docs`, file `data/reusables/gated-features/environments.md`). Without the
+  secrets the throwaway debug key is used (CI warns), and such an APK cannot update one signed with the
+  fixed key. The keystore is never committed; the owner keeps a backup outside GitHub. No automated tests
+  yet. Recognition, microphone, sync and the UI can only be checked on a real phone; say so when reporting.
 - **Release:** private APK only, never published to the Play Store or anywhere else. The owner installs it
   on their own phone. Installing via ADB / Android Studio stays exempt from Android's developer
   verification; normal sideloading may need verification once it is enforced in Germany (announced for
