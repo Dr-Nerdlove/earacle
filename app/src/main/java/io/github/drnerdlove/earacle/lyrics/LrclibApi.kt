@@ -5,6 +5,7 @@ import java.util.Locale
 import kotlin.math.abs
 import org.json.JSONArray
 import org.json.JSONException
+import org.json.JSONObject
 
 /** One entry of an LRCLIB search answer. */
 data class LrclibTrack(
@@ -41,13 +42,20 @@ object LrclibApi {
                 artistName = o.optString("artistName"),
                 durationSeconds = o.optDouble("duration", 0.0),
                 instrumental = o.optBoolean("instrumental", false),
-                plainLyrics = o.optString("plainLyrics").takeIf { it.isNotBlank() },
-                syncedLyrics = o.optString("syncedLyrics").takeIf { it.isNotBlank() },
+                plainLyrics = textOrNull(o, "plainLyrics"),
+                syncedLyrics = textOrNull(o, "syncedLyrics"),
             )
         }
     } catch (e: JSONException) {
         null
     }
+
+    /**
+     * The text of [key], or null when it is missing, JSON null blank or the text "null". Needed because Android's
+     * org.json turns a JSON null into the string "null" in optString (the JVM test library does not).
+     */
+    private fun textOrNull(o: JSONObject, key: String): String? =
+        if (o.isNull(key)) null else o.optString(key).takeIf { it.isNotBlank() && it != "null" }
 
     /**
      * Picks the best entry for the recognized [title] and [artist], or null when none is the

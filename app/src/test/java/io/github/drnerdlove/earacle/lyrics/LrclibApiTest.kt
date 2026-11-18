@@ -42,6 +42,25 @@ class LrclibApiTest {
     }
 
     @Test
+    fun instrumentalSongWithJsonNullLyricsShowsInstrumental() {
+        // The real LRCLIB answer for "Sirens" by Ludwig Göransson.
+        val body = """[{"trackName":"Sirens","artistName":"Ludwig Göransson","duration":236.0,
+            "instrumental":true,"plainLyrics":null,"syncedLyrics":null}]"""
+        val picked = LrclibApi.pickBest(LrclibApi.parseSearchResults(body)!!, "Sirens", "Ludwig Göransson")!!
+        assertEquals(Lyrics.Instrumental, LrclibApi.toLyrics(picked))
+    }
+
+    @Test
+    fun theTextNullIsNotLyrics() {
+        // What Android's org.json hands over for a JSON null: the string "null".
+        val body = """[{"trackName":"Sirens","artistName":"Ludwig Göransson","duration":236.0,
+            "instrumental":true,"plainLyrics":"null","syncedLyrics":"null"}]"""
+        val track = LrclibApi.parseSearchResults(body)!!.single()
+        assertNull(track.plainLyrics)
+        assertNull(track.syncedLyrics)
+    }
+
+    @Test
     fun parseReturnsNullForGarbage() {
         assertNull(LrclibApi.parseSearchResults("<html>"))
         assertNull(LrclibApi.parseSearchResults("""{"message":"x"}"""))
