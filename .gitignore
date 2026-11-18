@@ -1,0 +1,23 @@
+# Claude Code local settings (contain allowed commands word for word)
+.claude/settings.local.json
+
+# Gradle / Android build output
+.gradle/
+build/
+*/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Local configuration
+local.properties
+.env
+*.jks
+*.keystore
+
+# IDE
+.idea/
+*.iml
+.DS_Store
