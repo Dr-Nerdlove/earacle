@@ -16,8 +16,8 @@ android {
         applicationId = "io.github.drnerdlove.earacle"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     signingConfigs {
@@ -58,4 +58,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    testImplementation(libs.junit)
+    // Android ships org.json, but in JVM unit tests android.jar only has stubs of it.
+    testImplementation(libs.org.json)
 }

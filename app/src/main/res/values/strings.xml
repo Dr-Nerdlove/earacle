@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Earacle</string>
-    <string name="placeholder_title" translatable="false">Earacle</string>
-    <string name="placeholder_text">Soon, Earacle will listen to the music around you, recognize the song and show its lyrics in sync with the music.</string>
-    <string name="placeholder_status">This is an early test version. There is nothing to do here yet.</string>
+    <string name="button_recognize">Recognize song</string>
+    <string name="button_try_again">Try again</string>
+    <string name="hint_idle">Tap the button to recognize the song that is playing nearby.</string>
+    <string name="status_listening">Listening…</string>
+    <string name="hint_listening">Hold the phone near the music.</string>
+    <string name="status_recognizing">Recognizing…</string>
+    <string name="status_not_found">This song was not recognized. Move closer to the music and try again.</string>
+    <string name="status_permission_denied">Earacle needs access to the microphone to hear the music. Please allow it and try again.</string>
+    <string name="position_in_song">Position in song: %1$s</string>
+    <string name="error_microphone">The microphone could not be used. Please try again.</string>
+    <string name="error_network">No connection to the recognition service. Check your internet connection and try again.</string>
+    <string name="error_rate_limited">The recognition service is limiting requests right now. Please wait a moment and try again.</string>
+    <string name="error_server">The recognition service sent an unexpected answer. Please try again later.</string>
 </resources>

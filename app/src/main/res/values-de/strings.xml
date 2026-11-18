@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="placeholder_text">Bald hört Earacle die Musik in deiner Nähe, erkennt das Lied und zeigt den Songtext passend zur Musik an.</string>
-    <string name="placeholder_status">Das ist eine frühe Testversion. Hier gibt es noch nichts zu tun.</string>
+    <string name="button_recognize">Lied erkennen</string>
+    <string name="button_try_again">Nochmal versuchen</string>
+    <string name="hint_idle">Tippe auf den Knopf, um das Lied zu erkennen, das gerade in der Nähe läuft.</string>
+    <string name="status_listening">Höre zu…</string>
+    <string name="hint_listening">Halte das Handy nah an die Musik.</string>
+    <string name="status_recognizing">Erkenne…</string>
+    <string name="status_not_found">Das Lied wurde nicht erkannt. Geh näher an die Musik heran und versuche es nochmal.</string>
+    <string name="status_permission_denied">Earacle braucht Zugriff auf das Mikrofon, um die Musik zu hören. Bitte erlaube ihn und versuche es nochmal.</string>
+    <string name="position_in_song">Position im Lied: %1$s</string>
+    <string name="error_microphone">Das Mikrofon konnte nicht benutzt werden. Bitte versuche es nochmal.</string>
+    <string name="error_network">Keine Verbindung zum Erkennungsdienst. Prüfe deine Internetverbindung und versuche es nochmal.</string>
+    <string name="error_rate_limited">Der Erkennungsdienst begrenzt gerade die Anfragen. Bitte warte einen Moment und versuche es nochmal.</string>
+    <string name="error_server">Der Erkennungsdienst hat eine unerwartete Antwort geschickt. Bitte versuche es später nochmal.</string>
 </resources>
