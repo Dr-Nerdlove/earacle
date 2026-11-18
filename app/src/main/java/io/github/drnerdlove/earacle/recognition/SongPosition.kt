@@ -4,8 +4,7 @@ import java.util.Locale
 
 /**
  * Current position in the song: Shazam's offset plus the time passed since the recording started.
- * Assumption: the offset is the song position at the START of the recorded sample. This is
- * verified only on a real phone.
+ * The offset is the song position at the START of the recorded sample (confirmed on a real phone).
  */
 fun positionSeconds(offsetSeconds: Double, recordingStartedAtElapsedMs: Long, nowElapsedMs: Long): Double =
     offsetSeconds + (nowElapsedMs - recordingStartedAtElapsedMs) / 1000.0

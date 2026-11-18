@@ -245,8 +245,8 @@ missing, with a recommendation, and let the people choose.
   - The unofficial Shazam API can change or break at any time without notice; keep recognition behind
     an interface so another backend can be plugged in.
   - Shazam returns no match for audio windows of 15 s or more; send 12 s (SongRec does the same).
-  - The meaning of Shazam's `offset` (assumed: position in the song at the start of the sample, so the
-    current position is offset + time since the recording started) is an assumption; verify it on the phone.
+  - Shazam's `offset` is the position in the song at the start of the sample, so the current position is
+    offset + time since the recording started (confirmed on the owner's phone with v0.2.0).
   - Not every LRCLIB track has synced lyrics; fall back to plain lyrics or a clear message.
 - **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
   Maven repository (`dl.google.com`) or `services.gradle.org`, so Gradle cannot build the app there. Build through the GitHub
