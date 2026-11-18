@@ -186,7 +186,8 @@ missing, with a recommendation, and let the people choose.
   (e.g. a radio), recognizes the song and shows its lyrics in sync with the music, line by line.
 - **People:** the owner (GitHub: Dr-Nerdlove) builds the project together with AI assistants and does not
   program. The owner alone decides about merging and releases.
-- **Product languages:** not decided yet - ask the owner before writing the first user-facing texts.
+- **Product languages:** German and English. Every user-facing text exists in both (`values/strings.xml`
+  for English as the default, `values-de/strings.xml` for German), in the same change.
 - **Planned architecture (decided, not built yet):**
   - Kotlin + Jetpack Compose; microphone capture with `AudioRecord` (PCM 16-bit mono) in a foreground
     service of type `microphone`, so it keeps listening with the screen off.
