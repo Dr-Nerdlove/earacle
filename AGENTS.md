@@ -208,12 +208,13 @@ missing, with a recommendation, and let the people choose.
   `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
   Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
   `gradle/wrapper/gradle-wrapper.properties`.
-- **Build and test:** `.github/workflows/build.yml` runs `./gradlew assembleDebug` on every push and pull
-  request (and by hand via "Run workflow") and uploads the debug APK as the artifact `earacle-debug-apk`
-  (kept 30 days; on the run's page under "Artifacts", downloaded as a zip). No signing keystore in the
-  repository: the debug APK is signed with the runner's throwaway debug key, so a newer build from another
-  run may have to replace the installed app by uninstalling it first (its data is lost). No automated tests
-  yet. Recognition, microphone, sync and the UI can only be checked on a real phone; say so when reporting.
+- **Build and test:** `.github/workflows/build.yml` runs `./gradlew assembleDebug` on every pull request
+  and every push to `main` (and by hand via "Run workflow"; a branch without a pull request is not built)
+  and uploads the debug APK as the artifact `earacle-debug-apk` (kept 30 days; on the run's page under
+  "Artifacts", downloaded as a zip). No signing keystore in the repository: the debug APK is signed with the
+  runner's throwaway debug key, so a newer build from another run may have to replace the installed app by
+  uninstalling it first (its data is lost). No automated tests yet. Recognition, microphone, sync and the UI
+  can only be checked on a real phone; say so when reporting.
 - **Release:** private APK only, never published to the Play Store or anywhere else. The owner installs it
   on their own phone. Installing via ADB / Android Studio stays exempt from Android's developer
   verification; normal sideloading may need verification once it is enforced in Germany (announced for
