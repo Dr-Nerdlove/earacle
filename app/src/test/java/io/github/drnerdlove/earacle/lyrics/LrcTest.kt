@@ -54,4 +54,42 @@ class LrcTest {
         assertEquals(listOf("A", "B"), Lrc.parse("[00:01.00] A\r\n[00:02.00] B\r\n").map { it.text })
         assertTrue(Lrc.parse("").isEmpty())
     }
+
+    private val song = listOf(LyricLine(1000, "a"), LyricLine(5000, "b"), LyricLine(9000, "c"))
+
+    @Test
+    fun currentLineOfEmptyListIsMinusOne() {
+        assertEquals(-1, currentLineIndex(emptyList(), 5000))
+    }
+
+    @Test
+    fun currentLineBeforeFirstLineIsMinusOne() {
+        assertEquals(-1, currentLineIndex(song, 999))
+        assertEquals(-1, currentLineIndex(song, 0))
+    }
+
+    @Test
+    fun currentLineOnExactTimestampIsThatLine() {
+        assertEquals(0, currentLineIndex(song, 1000))
+        assertEquals(1, currentLineIndex(song, 5000))
+        assertEquals(2, currentLineIndex(song, 9000))
+    }
+
+    @Test
+    fun currentLineBetweenTwoLinesIsTheEarlierOne() {
+        assertEquals(0, currentLineIndex(song, 4999))
+        assertEquals(1, currentLineIndex(song, 8999))
+    }
+
+    @Test
+    fun currentLineAfterLastLineIsTheLastLine() {
+        assertEquals(2, currentLineIndex(song, 600000))
+    }
+
+    @Test
+    fun currentLineWithSameTimestampIsTheLaterIndex() {
+        val lines = listOf(LyricLine(1000, "a"), LyricLine(2000, "b"), LyricLine(2000, "c"), LyricLine(3000, "d"))
+        assertEquals(2, currentLineIndex(lines, 2000))
+        assertEquals(2, currentLineIndex(lines, 2500))
+    }
 }
