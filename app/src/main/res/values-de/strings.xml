@@ -13,4 +13,8 @@
     <string name="error_network">Keine Verbindung zum Erkennungsdienst. Prüfe deine Internetverbindung und versuche es nochmal.</string>
     <string name="error_rate_limited">Der Erkennungsdienst begrenzt gerade die Anfragen. Bitte warte einen Moment und versuche es nochmal.</string>
     <string name="error_server">Der Erkennungsdienst hat eine unerwartete Antwort geschickt. Bitte versuche es später nochmal.</string>
+    <string name="lyrics_not_found">Zu diesem Lied wurde kein Text gefunden.</string>
+    <string name="lyrics_instrumental">Dieses Lied ist instrumental, deshalb gibt es keinen Text.</string>
+    <string name="lyrics_error">Der Text konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es nochmal.</string>
+    <string name="lyrics_not_synced">Zu diesem Lied gibt es keinen zeitlich abgestimmten Text, deshalb siehst du hier den normalen Text.</string>
 </resources>

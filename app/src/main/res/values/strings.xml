@@ -14,4 +14,8 @@
     <string name="error_network">No connection to the recognition service. Check your internet connection and try again.</string>
     <string name="error_rate_limited">The recognition service is limiting requests right now. Please wait a moment and try again.</string>
     <string name="error_server">The recognition service sent an unexpected answer. Please try again later.</string>
+    <string name="lyrics_not_found">No lyrics were found for this song.</string>
+    <string name="lyrics_instrumental">This song is instrumental, so there are no lyrics.</string>
+    <string name="lyrics_error">The lyrics could not be loaded. Check your internet connection and try again.</string>
+    <string name="lyrics_not_synced">No synced lyrics exist for this song, so here is the plain text.</string>
 </resources>
