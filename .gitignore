@@ -5,6 +5,7 @@
 .gradle/
 build/
 */build/
+.kotlin/
 captures/
 .externalNativeBuild/
 .cxx/

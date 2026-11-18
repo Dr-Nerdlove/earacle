@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Earacle</string>
+    <string name="placeholder_title" translatable="false">Earacle</string>
+    <string name="placeholder_text">Soon, Earacle will listen to the music around you, recognize the song and show its lyrics in sync with the music.</string>
+    <string name="placeholder_status">This is an early test version. There is nothing to do here yet.</string>
+</resources>
