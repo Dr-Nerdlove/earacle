@@ -42,7 +42,7 @@ Built with Kotlin and Jetpack Compose.
 
 ## Install
 
-Every push builds a debug APK in GitHub Actions. To install it:
+Every pull request and every change on `main` builds a debug APK in GitHub Actions. To install it:
 
 1. On GitHub, open **Actions → Build**, pick the latest green run of the branch you want (usually `main`)
    and download **earacle-debug-apk** under "Artifacts" (kept for 30 days). It is a zip file; unpack it to
@@ -58,8 +58,9 @@ a newer build over an older one, uninstall the old one first (this deletes the a
   (for Claude: [CLAUDE.md](CLAUDE.md)).
 - Kotlin + Jetpack Compose, one module (`app`). Versions are kept in `gradle/libs.versions.toml`.
 - Build locally with Android Studio or `./gradlew assembleDebug` (JDK 17 or newer, Android SDK).
-- GitHub Actions builds the debug APK on every push and pull request (`.github/workflows/build.yml`) and
-  scans every push and pull request for leaked secrets with gitleaks (`.github/workflows/gitleaks.yml`).
+- GitHub Actions builds the debug APK on every pull request and every push to `main`
+  (`.github/workflows/build.yml`) and scans every push and pull request for leaked secrets with gitleaks
+  (`.github/workflows/gitleaks.yml`).
 - There are no automated tests yet. Recognition and sync are checked on a real phone.
 
 ## Credits
