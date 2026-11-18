@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build and test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,6 +39,7 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/earacle-signing.p12"
           echo "EARACLE_KEYSTORE_FILE=$RUNNER_TEMP/earacle-signing.p12" >> "$GITHUB_ENV"
           echo "EARACLE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+      - run: ./gradlew testDebugUnitTest --stacktrace
       - run: ./gradlew assembleDebug --stacktrace
       # Prints the certificate fingerprint (public, not secret): it must stay the same from run to run.
       - name: Show signing certificate

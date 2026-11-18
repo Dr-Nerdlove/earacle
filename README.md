@@ -9,14 +9,15 @@ The app will be available in German and English.
 
 ## Status
 
-**Early stage.** The app is only a skeleton so far: it opens a single placeholder screen and does nothing
-else yet. Everything below under "Features" and "How it works" describes what Earacle is planned to do, not
-what it does today.
+**Early stage (version 0.2.0).** Earacle can now recognize a song: tap "Recognize song", it listens through the
+microphone for 12 seconds, asks the unofficial Shazam service and shows the title, the artist and the current
+position in the song. Synced lyrics, background listening and automatic re-recognition are not built yet; they
+are listed under "Features (planned)".
 
 ## Features (planned)
 
 - Listens to nearby music through the microphone, also with the screen off
-- Recognizes the song that is playing
+- Recognizes the song that is playing (works today: title, artist and position in the song)
 - Shows synced lyrics, one line at a time, following the music
 - Notices when the song changes
 - Manual offset slider to fix the timing by hand
@@ -64,12 +65,16 @@ and its password outside GitHub (GitHub secrets cannot be read back).
 - GitHub Actions builds the debug APK on every pull request and every push to `main`
   (`.github/workflows/build.yml`) and scans every push and pull request for leaked secrets with gitleaks
   (`.github/workflows/gitleaks.yml`).
-- There are no automated tests yet. Recognition and sync are checked on a real phone.
+- Unit tests (JUnit 4) for the fingerprint, the Shazam request and answer handling and the position maths live
+  in `app/src/test`. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request and push to
+  `main`. Microphone, real recognition and the screen can only be checked on a real phone.
 
 ## Credits
 
 - [LRCLIB](https://lrclib.net) for synced lyrics
 - SongRec, ShazamIO and MusicRecognizer (Audile) as references for the Shazam-based recognition
+- The audio fingerprinting (`app/src/main/java/io/github/drnerdlove/earacle/recognition`) is ported from
+  [SongRec](https://github.com/marin-m/SongRec) by marin-m (GPL-3.0-or-later), used under this project's AGPL-3.0
 
 ## License
 

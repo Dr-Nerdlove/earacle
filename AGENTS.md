@@ -218,8 +218,14 @@ missing, with a recommendation, and let the people choose.
   Repository secrets, not environment secrets: environments are not available in private repositories on a
   free plan (source: `github/docs`, file `data/reusables/gated-features/environments.md`). Without the
   secrets the throwaway debug key is used (CI warns), and such an APK cannot update one signed with the
-  fixed key. The keystore is never committed; the owner keeps a backup outside GitHub. No automated tests
-  yet. Recognition, microphone, sync and the UI can only be checked on a real phone; say so when reporting.
+  fixed key. The keystore is never committed; the owner keeps a backup outside GitHub. JVM unit tests live in
+  `app/src/test` (JUnit 4; org.json is a `testImplementation` dependency because `android.jar` only contains
+  stubs of it) and CI runs them with `./gradlew testDebugUnitTest` before `assembleDebug`. Keep the
+  recognition logic free of `android.*` imports so it can be tested. The cloud session cannot run the Android
+  build, but the tests can be run there with the local Gradle (`/opt/gradle`, 8.14) from a scratch JVM project
+  (`kotlin("jvm")`, junit 4.13.2, org.json) whose source sets point at the pure sources in `recognition/`
+  (without `ShazamRecognizer.kt`) and at `app/src/test`. Microphone, real recognition, sync and the UI can
+  only be checked on a real phone; say so when reporting.
 - **Release:** private APK only, never published to the Play Store or anywhere else. The owner installs it
   on their own phone. Installing via ADB / Android Studio stays exempt from Android's developer
   verification; normal sideloading may need verification once it is enforced in Germany (announced for
@@ -238,6 +244,9 @@ missing, with a recommendation, and let the people choose.
     jar.
   - The unofficial Shazam API can change or break at any time without notice; keep recognition behind
     an interface so another backend can be plugged in.
+  - Shazam returns no match for audio windows of 15 s or more; send 12 s (SongRec does the same).
+  - Shazam's `offset` is the position in the song at the start of the sample, so the current position is
+    offset + time since the recording started (confirmed on the owner's phone with v0.2.0).
   - Not every LRCLIB track has synced lyrics; fall back to plain lyrics or a clear message.
 - **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
   Maven repository (`dl.google.com`) or `services.gradle.org`, so Gradle cannot build the app there. Build through the GitHub
