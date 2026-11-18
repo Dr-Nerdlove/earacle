@@ -204,20 +204,36 @@ missing, with a recommendation, and let the people choose.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota).
-- **Build and test:** APKs are built by a GitHub Actions workflow (not set up yet). No automated tests yet.
-  Recognition, microphone, sync and the UI can only be checked on a real phone; say so when reporting.
+- **Code layout:** one Gradle module `app` (Kotlin + Jetpack Compose), package and applicationId
+  `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
+  Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
+  `gradle/wrapper/gradle-wrapper.properties`.
+- **Build and test:** `.github/workflows/build.yml` runs `./gradlew assembleDebug` on every push and pull
+  request (and by hand via "Run workflow") and uploads the debug APK as the artifact `earacle-debug-apk`
+  (kept 30 days; on the run's page under "Artifacts", downloaded as a zip). No signing keystore in the
+  repository: the debug APK is signed with the runner's throwaway debug key, so a newer build from another
+  run may have to replace the installed app by uninstalling it first (its data is lost). No automated tests
+  yet. Recognition, microphone, sync and the UI can only be checked on a real phone; say so when reporting.
 - **Release:** private APK only, never published to the Play Store or anywhere else. The owner installs it
   on their own phone. Installing via ADB / Android Studio stays exempt from Android's developer
   verification; normal sideloading may need verification once it is enforced in Germany (announced for
   2027 and later).
 - **Repository:** private, owned by Dr-Nerdlove alone. Licence: AGPL-3.0 (`LICENSE`). Versions
-  `vMAJOR.MINOR.PATCH`. CI: none yet. Branch protection is not available (private repository on a free
-  plan).
+  `vMAJOR.MINOR.PATCH`. CI: GitHub Actions, `build.yml` (debug APK) and `gitleaks.yml` (secret scan of
+  every push and pull request with `gitleaks/gitleaks-action`; no licence key needed because the repository
+  belongs to a personal account, not an organization). Branch protection is not available (private
+  repository on a free plan).
 - **Traps:**
+  - AGP 9 has built-in Kotlin: do **not** apply `org.jetbrains.kotlin.android`. AGP bundles an older Kotlin
+    Gradle plugin; the root `build.gradle.kts` puts the catalog's Kotlin version on the buildscript classpath
+    so it is used instead. Keep the Compose compiler plugin version equal to the Kotlin version.
+  - The Gradle wrapper was generated offline in the cloud session (`services.gradle.org` is blocked there),
+    so `gradle-wrapper.properties` has no `distributionSha256Sum`. `setup-gradle` in CI validates the wrapper
+    jar.
   - The unofficial Shazam API can change or break at any time without notice; keep recognition behind
     an interface so another backend can be plugged in.
   - Not every LRCLIB track has synced lyrics; fall back to plain lyrics or a clear message.
 - **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
-  Maven repository (`dl.google.com`), so Gradle cannot build the app there. Build through the GitHub
+  Maven repository (`dl.google.com`) or `services.gradle.org`, so Gradle cannot build the app there. Build through the GitHub
   Actions workflow and read its logs with `gh api` (GitHub's GraphQL API is blocked in the cloud session;
   use REST).

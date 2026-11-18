@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="placeholder_text">Bald hört Earacle die Musik in deiner Nähe, erkennt das Lied und zeigt den Songtext passend zur Musik an.</string>
+    <string name="placeholder_status">Das ist eine frühe Testversion. Hier gibt es noch nichts zu tun.</string>
+</resources>

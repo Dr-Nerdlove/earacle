@@ -1,0 +1,23 @@
+name: Secret scan
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # No GITLEAKS_LICENSE needed: it is only required for repositories owned by
+      # organizations, not personal accounts (source: gitleaks/gitleaks-action README).
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

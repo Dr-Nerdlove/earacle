@@ -9,7 +9,8 @@ The app will be available in German and English.
 
 ## Status
 
-**Early planning. There is no app code yet.** Everything below describes what Earacle is planned to do, not
+**Early stage.** The app is only a skeleton so far: it opens a single placeholder screen and does nothing
+else yet. Everything below under "Features" and "How it works" describes what Earacle is planned to do, not
 what it does today.
 
 ## Features (planned)
@@ -41,16 +42,24 @@ Built with Kotlin and Jetpack Compose.
 
 ## Install
 
-There is nothing to install yet. Once the build workflow exists:
+Every push builds a debug APK in GitHub Actions. To install it:
 
-1. Download the APK built by GitHub Actions (the workflow is not set up yet).
-2. Install it on your own phone, for example with `adb install`.
+1. On GitHub, open **Actions → Build**, pick the latest green run of the branch you want (usually `main`)
+   and download **earacle-debug-apk** under "Artifacts" (kept for 30 days). It is a zip file; unpack it to
+   get the `.apk`.
+2. Install it on your own phone, for example with `adb install app-debug.apk`.
+
+Each build is signed with a temporary debug key that changes from run to run. If Android refuses to install
+a newer build over an older one, uninstall the old one first (this deletes the app's data).
 
 ## Development
 
 - Earacle is built together with AI assistants. Instructions for AI tools are in [AGENTS.md](AGENTS.md)
   (for Claude: [CLAUDE.md](CLAUDE.md)).
-- Builds run in GitHub Actions (coming soon).
+- Kotlin + Jetpack Compose, one module (`app`). Versions are kept in `gradle/libs.versions.toml`.
+- Build locally with Android Studio or `./gradlew assembleDebug` (JDK 17 or newer, Android SDK).
+- GitHub Actions builds the debug APK on every push and pull request (`.github/workflows/build.yml`) and
+  scans every push and pull request for leaked secrets with gitleaks (`.github/workflows/gitleaks.yml`).
 - There are no automated tests yet. Recognition and sync are checked on a real phone.
 
 ## Credits
