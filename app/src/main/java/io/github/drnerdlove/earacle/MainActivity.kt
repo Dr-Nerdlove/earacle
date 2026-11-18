@@ -12,7 +12,10 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
+import io.github.drnerdlove.earacle.lyrics.Lyrics
 import io.github.drnerdlove.earacle.recognition.RecognitionResult
 import io.github.drnerdlove.earacle.recognition.formatPosition
 import io.github.drnerdlove.earacle.recognition.positionSeconds
@@ -125,7 +129,11 @@ fun MainContent(state: UiState, onRecognize: () -> Unit, modifier: Modifier = Mo
             style = MaterialTheme.typography.displaySmall,
         )
         Spacer(Modifier.height(24.dp))
-        StatusArea(state)
+        if (state is UiState.Found) {
+            FoundArea(state)
+        } else {
+            StatusArea(state)
+        }
         Spacer(Modifier.height(32.dp))
         Button(onClick = onRecognize, enabled = !busy) {
             Text(stringResource(if (retry) R.string.button_try_again else R.string.button_recognize))
@@ -149,7 +157,7 @@ private fun StatusArea(state: UiState) {
             Spacer(Modifier.height(12.dp))
             CircularProgressIndicator()
         }
-        is UiState.Found -> FoundArea(state)
+        is UiState.Found -> Unit // shown by FoundArea
         UiState.NotFound -> Hint(stringResource(R.string.status_not_found))
         is UiState.Error -> Hint(
             stringResource(
@@ -166,7 +174,7 @@ private fun StatusArea(state: UiState) {
 }
 
 @Composable
-private fun FoundArea(state: UiState.Found) {
+private fun ColumnScope.FoundArea(state: UiState.Found) {
     val match: RecognitionResult.Match = state.match
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(state) {
@@ -185,6 +193,36 @@ private fun FoundArea(state: UiState.Found) {
     Text(
         stringResource(R.string.position_in_song, position),
         style = MaterialTheme.typography.bodyLarge,
+    )
+    Spacer(Modifier.height(16.dp))
+    LyricsArea(state.lyrics)
+}
+
+@Composable
+private fun ColumnScope.LyricsArea(lyrics: Lyrics?) {
+    when (lyrics) {
+        null -> CircularProgressIndicator()
+        Lyrics.NotFound -> Hint(stringResource(R.string.lyrics_not_found))
+        Lyrics.Instrumental -> Hint(stringResource(R.string.lyrics_instrumental))
+        Lyrics.Failure -> Hint(stringResource(R.string.lyrics_error))
+        is Lyrics.Plain -> LyricsText(lyrics.text, plainNote = true)
+        is Lyrics.Synced -> LyricsText(lyrics.lines.joinToString("\n") { it.text }, plainNote = false)
+    }
+}
+
+@Composable
+private fun ColumnScope.LyricsText(text: String, plainNote: Boolean) {
+    if (plainNote) {
+        Hint(stringResource(R.string.lyrics_not_synced))
+        Spacer(Modifier.height(8.dp))
+    }
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .weight(1f, fill = false)
+            .verticalScroll(rememberScrollState()),
     )
 }
 
