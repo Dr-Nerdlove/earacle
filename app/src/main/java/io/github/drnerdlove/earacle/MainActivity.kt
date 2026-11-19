@@ -19,6 +19,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
@@ -40,7 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
+import io.github.drnerdlove.earacle.lyrics.LyricLine
 import io.github.drnerdlove.earacle.lyrics.Lyrics
+import io.github.drnerdlove.earacle.lyrics.currentLineIndex
 import io.github.drnerdlove.earacle.recognition.RecognitionResult
 import io.github.drnerdlove.earacle.recognition.formatPosition
 import io.github.drnerdlove.earacle.recognition.positionSeconds
@@ -49,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -180,12 +186,12 @@ private fun ColumnScope.FoundArea(state: UiState.Found) {
     LaunchedEffect(state) {
         while (true) {
             now = SystemClock.elapsedRealtime()
-            delay(1000)
+            delay(200)
         }
     }
-    val position = formatPosition(
-        positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now),
-    )
+    val seconds = positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now)
+    val position = formatPosition(seconds)
+    val positionMs = (seconds * 1000).toLong()
     Text(match.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
     Spacer(Modifier.height(8.dp))
     Text(match.artist, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
@@ -195,18 +201,49 @@ private fun ColumnScope.FoundArea(state: UiState.Found) {
         style = MaterialTheme.typography.bodyLarge,
     )
     Spacer(Modifier.height(16.dp))
-    LyricsArea(state.lyrics)
+    LyricsArea(state.lyrics, positionMs)
 }
 
 @Composable
-private fun ColumnScope.LyricsArea(lyrics: Lyrics?) {
+private fun ColumnScope.LyricsArea(lyrics: Lyrics?, positionMs: Long) {
     when (lyrics) {
         null -> CircularProgressIndicator()
         Lyrics.NotFound -> Hint(stringResource(R.string.lyrics_not_found))
         Lyrics.Instrumental -> Hint(stringResource(R.string.lyrics_instrumental))
         Lyrics.Failure -> Hint(stringResource(R.string.lyrics_error))
         is Lyrics.Plain -> LyricsText(lyrics.text, plainNote = true)
-        is Lyrics.Synced -> LyricsText(lyrics.lines.joinToString("\n") { it.text }, plainNote = false)
+        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs)
+    }
+}
+
+@Composable
+private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
+    val current = currentLineIndex(lines, positionMs)
+    val listState = rememberLazyListState()
+    // Keep the current line about third from the top.
+    LaunchedEffect(current) {
+        if (current >= 0) listState.animateScrollToItem(maxOf(0, current - 2))
+    }
+    LazyColumn(
+        state = listState,
+        modifier = Modifier
+            .weight(1f, fill = false)
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        itemsIndexed(lines) { index, line ->
+            val isCurrent = index == current
+            Text(
+                text = line.text.ifEmpty { "♪" },
+                style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isCurrent) FontWeight.Bold else null,
+                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+            )
+        }
     }
 }
 
