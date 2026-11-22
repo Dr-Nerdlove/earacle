@@ -1,5 +1,6 @@
 name: Secret scan
 
+# Deliberately without paths-ignore: secrets can end up in documentation too.
 on:
   push:
   pull_request:
@@ -9,9 +10,14 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   gitleaks:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -21,3 +27,5 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Findings still show in the log and the job summary; do not keep a SARIF artifact.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

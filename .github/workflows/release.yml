@@ -1,0 +1,92 @@
+name: Release
+
+# Started by hand: Actions -> Release -> Run workflow -> enter the version (e.g. v0.3.0).
+# Creates the tag and the GitHub Release itself and builds in the same run, because a cloud session
+# cannot push tags and a tag created by a workflow does not start other workflows.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. v0.3.0 (must match versionName in app/build.gradle.kts)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ inputs.version }}
+  # SHA-256 of the fixed signing certificate (public, not secret). An APK with another certificate
+  # cannot be installed over the app on the phone.
+  EXPECTED_CERT_SHA256: 80f3eb07a537585ed98b1461c9c488e441a2d1aa321ffb83443ff86b0c561ecb
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check version
+        run: |
+          if ! echo "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version must look like v1.2.3, got '$VERSION'."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" > /dev/null; then
+            echo "::error::Tag $VERSION exists already. Choose a new version."
+            exit 1
+          fi
+          APP_VERSION=$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' app/build.gradle.kts)
+          if [ "v$APP_VERSION" != "$VERSION" ]; then
+            echo "::error::versionName in app/build.gradle.kts is '$APP_VERSION', not '${VERSION#v}'. Raise it in a pull request first."
+            exit 1
+          fi
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v6
+      # The keystore comes from repository secrets and only exists on the runner during the build.
+      - name: Prepare signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.EARACLE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.EARACLE_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Signing secrets EARACLE_KEYSTORE_BASE64 / EARACLE_KEYSTORE_PASSWORD are not set."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/earacle-signing.p12"
+          echo "EARACLE_KEYSTORE_FILE=$RUNNER_TEMP/earacle-signing.p12" >> "$GITHUB_ENV"
+          echo "EARACLE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+      - run: ./gradlew testDebugUnitTest assembleRelease --stacktrace
+      - name: Check signing certificate
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)apksigner
+          CERT=$("$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk \
+            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          echo "Certificate SHA-256: $CERT"
+          if [ "$CERT" != "$EXPECTED_CERT_SHA256" ]; then
+            echo "::error::The APK is not signed with the fixed key."
+            exit 1
+          fi
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/earacle-$VERSION.apk"
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > "$RUNNER_TEMP/notes.md" <<NOTES
+          **Install or update:** download \`earacle-$VERSION.apk\` below on your phone and open it (allow
+          installing from this source if Android asks), or run \`adb install -r earacle-$VERSION.apk\`.
+          It installs over an earlier Earacle build signed with the same key and keeps the app's data.
+          NOTES
+          gh release create "$VERSION" "$RUNNER_TEMP/earacle-$VERSION.apk" \
+            --target "$GITHUB_SHA" \
+            --title "Earacle $VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --generate-notes

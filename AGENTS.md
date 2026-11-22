@@ -265,30 +265,47 @@ repository belongs to someone else, these points still apply unless "Project kno
   `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
   Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
   `gradle/wrapper/gradle-wrapper.properties`.
-- **Build and test:** `.github/workflows/build.yml` runs `./gradlew assembleDebug` on every pull request
-  and every push to `main` (and by hand via "Run workflow"; a branch without a pull request is not built)
-  and uploads the debug APK as the artifact `earacle-debug-apk` (kept 30 days; on the run's page under
-  "Artifacts", downloaded as a zip). Signing: CI signs the debug APK with a fixed key (PKCS12, alias
-  `earacle`, same password for store and key) from the repository secrets `EARACLE_KEYSTORE_BASE64` and
-  `EARACLE_KEYSTORE_PASSWORD`, passed to Gradle as `EARACLE_KEYSTORE_FILE` / `EARACLE_KEYSTORE_PASSWORD`;
-  the step "Show signing certificate" prints its SHA-256 fingerprint, which must not change between runs.
+- **Build and test:** `.github/workflows/build.yml` runs on every pull request (skipped when only `*.md`
+  files, `LICENSE` or `.claude/**` change) `./gradlew testDebugUnitTest assembleRelease`: unit tests and an
+  unsigned release APK that is not kept. Started by hand (Actions -> Build -> Run workflow, any branch) it also
+  signs the APK and uploads it as the artifact `earacle-test-apk`, kept 1 day, to try a branch on the phone
+  before merging (on the run's page under "Artifacts", downloaded as a zip). Nothing is built on pushes to
+  `main`. Only the release variant is built (owner-rules: one variant). Signing: CI signs with a fixed key
+  (PKCS12, alias `earacle`, same password for store and key) from the repository secrets
+  `EARACLE_KEYSTORE_BASE64` and `EARACLE_KEYSTORE_PASSWORD`, passed to Gradle as `EARACLE_KEYSTORE_FILE` /
+  `EARACLE_KEYSTORE_PASSWORD`; `app/build.gradle.kts` applies it to the debug and the release build. Its
+  certificate SHA-256 is `80f3eb07a537585ed98b1461c9c488e441a2d1aa321ffb83443ff86b0c561ecb` (public); signed
+  runs fail when the APK has another one, or when the secrets are missing. Every CI build since PR #5
+  (2026-11-18) had this certificate; only the first three builds before it used throwaway debug keys.
   Repository secrets, not environment secrets: environments are not available in private repositories on a
-  free plan (source: `github/docs`, file `data/reusables/gated-features/environments.md`). Without the
-  secrets the throwaway debug key is used (CI warns), and such an APK cannot update one signed with the
-  fixed key. The keystore is never committed; the owner keeps a backup outside GitHub. JVM unit tests live in
+  free plan (source: `github/docs`, file `data/reusables/gated-features/environments.md`). The keystore is
+  never committed; the owner keeps a backup outside GitHub. JVM unit tests live in
   `app/src/test` (JUnit 4; org.json is a `testImplementation` dependency because `android.jar` only contains
-  stubs of it) and CI runs them with `./gradlew testDebugUnitTest` before `assembleDebug`. Keep the
+  stubs of it) and CI runs them with `./gradlew testDebugUnitTest`. Keep the
   recognition logic free of `android.*` imports so it can be tested. The cloud session cannot run the Android
   build, but the tests can be run there with the local Gradle (`/opt/gradle`, 8.14) from a scratch JVM project
   (`kotlin("jvm")`, junit 4.13.2, org.json) whose source sets point at the pure sources in `recognition/`
   (without `ShazamRecognizer.kt`) and at `app/src/test`. Microphone, real recognition, sync and the UI can
   only be checked on a real phone; say so when reporting.
-- **Release:** private APK only, never published to the Play Store or anywhere else. The owner installs it
-  on their own phone. Installing via ADB / Android Studio stays exempt from Android's developer
-  verification; normal sideloading may need verification once it is enforced in Germany (announced for
-  2027 and later).
+- **Release:** an APK for the owner's own phone, never published to the Play Store or any other store. It is
+  published as a GitHub Release of this public repository, so anyone can download it (the owner chose this on
+  2026-11-22, over a draft release only they could see). How to release:
+  1. Raise `versionName` (e.g. `0.4.0`) and `versionCode` (+1) in `app/build.gradle.kts` in a pull request,
+     with the release notes in its description, and merge it.
+  2. Actions -> **Release** -> **Run workflow** (branch `main`) -> enter the version with a `v` (e.g.
+     `v0.4.0`) -> **Run workflow**.
+  3. `.github/workflows/release.yml` checks the version (format, tag not taken yet, equal to `versionName`),
+     builds and signs the release APK, checks the certificate, then creates the tag and the GitHub Release
+     with `earacle-vX.Y.Z.apk` attached and notes generated from the merged pull requests. It takes a few
+     minutes (a build takes about 1-2 min); the release then appears under **Releases** on the repository
+     page.
+  Never tag or upload APKs by hand. The release APK has the same applicationId and key as the earlier CI debug
+  builds, so it installs over them and keeps the app's data. Installing via ADB / Android Studio stays exempt
+  from Android's developer verification; normal sideloading may need verification once it is enforced in
+  Germany (announced for 2027 and later).
 - **Repository:** public since 2026-11-18 (private before), owned by Dr-Nerdlove alone (personal account). Licence: AGPL-3.0 (`LICENSE`). Versions
-  `vMAJOR.MINOR.PATCH`. CI: GitHub Actions, `build.yml` (debug APK) and `gitleaks.yml` (secret scan of
+  `vMAJOR.MINOR.PATCH`. CI: GitHub Actions, `build.yml` (tests and compile check on pull requests, test APK by hand), `release.yml`
+  (releases, by hand) and `gitleaks.yml` (secret scan of
   every push and pull request with `gitleaks/gitleaks-action`; no licence key needed because the repository
   belongs to a personal account, not an organization). Branch protection is available now that the
   repository is public (free plan); whether to set it up is the owner's decision.

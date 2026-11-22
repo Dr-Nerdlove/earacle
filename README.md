@@ -45,18 +45,27 @@ Built with Kotlin and Jetpack Compose.
 
 ## Install
 
-Every pull request and every change on `main` builds a debug APK in GitHub Actions. To install it:
+Download the APK from the latest release:
 
-1. On GitHub, open **Actions → Build**, pick the latest green run of the branch you want (usually `main`)
-   and download **earacle-debug-apk** under "Artifacts" (kept for 30 days). It is a zip file; unpack it to
-   get the `.apk`.
-2. Install it on your own phone, for example with `adb install app-debug.apk`.
+1. On your phone, open the repository's **Releases** page on GitHub and download `earacle-vX.Y.Z.apk` from
+   the latest release.
+2. Open the file and install it (allow installing from this source if Android asks), or install it from a
+   computer with `adb install -r earacle-vX.Y.Z.apk`.
 
-Builds are signed with a fixed key kept in the repository's GitHub secrets `EARACLE_KEYSTORE_BASE64` and
-`EARACLE_KEYSTORE_PASSWORD`, so a newer build installs over the old one and keeps the app's data. Only the
-first build with this key (replacing an app installed from an earlier build) needs the old app uninstalled
-once. If the secrets are missing, CI uses a throwaway key and shows a warning. Keep a backup of the keystore
-and its password outside GitHub (GitHub secrets cannot be read back).
+Releases are signed with a fixed key kept in the repository's GitHub secrets `EARACLE_KEYSTORE_BASE64` and
+`EARACLE_KEYSTORE_PASSWORD`, so a newer version installs over the old one and keeps the app's data. Keep a
+backup of the keystore and its password outside GitHub (GitHub secrets cannot be read back).
+
+To try a branch before it is merged: **Actions → Build → Run workflow**, pick the branch, then download
+**earacle-test-apk** under "Artifacts" on the run's page (kept for one day; a zip file with the `.apk` inside).
+
+## Release
+
+1. Raise `versionName` and `versionCode` in `app/build.gradle.kts` in a pull request and merge it.
+2. **Actions → Release → Run workflow**, enter the version with a `v` (for example `v0.4.0`), **Run workflow**.
+
+The workflow checks the version, builds and signs the APK, creates the tag and the GitHub Release and attaches
+the APK.
 
 ## Development
 
@@ -64,12 +73,12 @@ and its password outside GitHub (GitHub secrets cannot be read back).
   (for Claude: [CLAUDE.md](CLAUDE.md)).
 - Kotlin + Jetpack Compose, one module (`app`). Versions are kept in `gradle/libs.versions.toml`.
 - Build locally with Android Studio or `./gradlew assembleDebug` (JDK 17 or newer, Android SDK).
-- GitHub Actions builds the debug APK on every pull request and every push to `main`
-  (`.github/workflows/build.yml`) and scans every push and pull request for leaked secrets with gitleaks
-  (`.github/workflows/gitleaks.yml`).
+- GitHub Actions runs the unit tests and checks that the app compiles on every pull request
+  (`.github/workflows/build.yml`), builds releases (`.github/workflows/release.yml`) and scans every push and
+  pull request for leaked secrets with gitleaks (`.github/workflows/gitleaks.yml`).
 - Unit tests (JUnit 4) for the fingerprint, the Shazam request and answer handling and the position maths live
-  in `app/src/test`. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request and push to
-  `main`. Microphone, real recognition and the screen can only be checked on a real phone.
+  in `app/src/test`. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request.
+  Microphone, real recognition and the screen can only be checked on a real phone.
 
 ## Credits
 
