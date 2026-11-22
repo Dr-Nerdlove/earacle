@@ -7,9 +7,9 @@ import org.junit.Test
 class LrcTest {
     @Test
     fun parsesTimesAndTexts() {
-        val lines = Lrc.parse("[00:01.33] Is this the real life?\n[01:07.27] Caught in a landslide")
+        val lines = Lrc.parse("[00:01.33] First made-up line?\n[01:07.27] Second made-up line")
         assertEquals(
-            listOf(LyricLine(1330, "Is this the real life?"), LyricLine(67270, "Caught in a landslide")),
+            listOf(LyricLine(1330, "First made-up line?"), LyricLine(67270, "Second made-up line")),
             lines,
         )
     }
