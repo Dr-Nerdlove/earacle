@@ -147,11 +147,19 @@ class LrclibApiTest {
     @Test
     fun toLyricsPrefersSyncedAndFallsBackToPlain() {
         val synced = LrclibApi.toLyrics(track(synced = "[00:01.00] A\n[00:02.00] B"))
-        assertEquals(Lyrics.Synced(listOf(LyricLine(1000, "A"), LyricLine(2000, "B"))), synced)
-        assertEquals(Lyrics.Plain("Hi"), LrclibApi.toLyrics(track(synced = null, plain = " Hi \n")))
+        assertEquals(Lyrics.Synced(listOf(LyricLine(1000, "A"), LyricLine(2000, "B")), 355.0), synced)
+        assertEquals(Lyrics.Plain("Hi", 355.0), LrclibApi.toLyrics(track(synced = null, plain = " Hi \n")))
         // Synced text that is not LRC at all must not hide the plain lyrics.
-        assertEquals(Lyrics.Plain("Hi"), LrclibApi.toLyrics(track(synced = "garbage", plain = "Hi")))
+        assertEquals(Lyrics.Plain("Hi", 355.0), LrclibApi.toLyrics(track(synced = "garbage", plain = "Hi")))
         assertEquals(Lyrics.NotFound, LrclibApi.toLyrics(track(synced = null, plain = null)))
+    }
+
+    @Test
+    fun toLyricsCarriesTheSongDuration() {
+        assertEquals(200.5, (LrclibApi.toLyrics(track(duration = 200.5)) as Lyrics.Synced).durationSeconds)
+        assertEquals(200.5, (LrclibApi.toLyrics(track(duration = 200.5, synced = null)) as Lyrics.Plain).durationSeconds)
+        // A missing or zero duration is unknown, not "ends immediately".
+        assertNull((LrclibApi.toLyrics(track(duration = 0.0)) as Lyrics.Synced).durationSeconds)
     }
 
     private val shazamArtist = "Star-Lord Band, Steve Szczepkowski & Yohann Boudreault"
