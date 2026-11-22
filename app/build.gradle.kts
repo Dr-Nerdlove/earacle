@@ -3,8 +3,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// CI signs with a fixed key from repository secrets (see .github/workflows/build.yml), so a newer
-// APK installs over the old one. Without it (local builds) the normal debug key is used.
+// CI signs with a fixed key from repository secrets (see .github/workflows/release.yml), so a newer
+// APK installs over the old one. Without it (local builds and pull request checks) the debug build
+// uses the normal debug key and the release build stays unsigned.
 val sharedKeystore = System.getenv("EARACLE_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let(::file)
 val sharedKeystorePassword = System.getenv("EARACLE_KEYSTORE_PASSWORD")
 
@@ -39,6 +40,9 @@ android {
         }
         release {
             isMinifyEnabled = false
+            if (sharedKeystore != null) {
+                signingConfig = signingConfigs.getByName("shared")
+            }
         }
     }
     compileOptions {
