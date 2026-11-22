@@ -182,7 +182,7 @@ missing, with a recommendation, and let the people choose.
 
 ## Project knowledge
 
-- **Project:** Earacle, a private Android app that listens through the microphone to music playing nearby
+- **Project:** Earacle, a personal Android app (made for the owner's own phone, not offered in any store) that listens through the microphone to music playing nearby
   (e.g. a radio), recognizes the song and shows its lyrics in sync with the music, line by line.
 - **People:** the owner (GitHub: Dr-Nerdlove) builds the project together with AI assistants and does not
   program. The owner alone decides about merging and releases.
@@ -193,8 +193,11 @@ missing, with a recommendation, and let the people choose.
     service of type `microphone`, so it keeps listening with the screen off.
   - Song recognition through the **unofficial (reverse-engineered) Shazam API**, as used by open-source
     projects such as SongRec, ShazamIO and MusicRecognizer (Audile, a Kotlin Android app and the best
-    reference). Chosen because it is free and returns the position within the song. Acceptable only
-    because the app is private and never published.
+    reference). Chosen because it is free and returns the position within the song. The API is not
+    endorsed by Apple or Shazam. The source code and the release APKs are public (the owner's decision,
+    2026-11-22), like those of the projects above; the app is not offered in any store. Keep requests
+    moderate (no bulk or automated use beyond the app's own listening along), and say clearly in the README
+    that the API is unofficial and may break.
   - Synced lyrics (LRC format) from **LRCLIB** (`lrclib.net`, free, no API key). Send title, artist and
     duration so the right version (radio edit, live, remix) is found.
   - Sync: position from the recognition result + time elapsed since the audio sample. A manual offset

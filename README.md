@@ -2,7 +2,7 @@
 
 🔮👂 **The oracle for your ears – recognizes songs from the radio and shows the lyrics live, perfectly in sync.**
 
-Earacle (ear + oracle) is a private Android app. It listens through the microphone to music playing nearby (for
+Earacle (ear + oracle) is a personal Android app. It listens through the microphone to music playing nearby (for
 example a radio), recognizes the song and shows its lyrics line by line, in sync with the music.
 
 The app will be available in German and English.
