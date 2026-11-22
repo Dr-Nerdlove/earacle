@@ -70,11 +70,10 @@ object LrclibApi {
         durationSeconds: Double? = null,
     ): LrclibTrack? {
         val wantedTitle = normalize(title)
-        val wantedArtist = normalize(artist)
         val wantedIsVariant = isVariant(title)
         val sameSong = tracks.filter {
             normalize(it.trackName) == wantedTitle &&
-                artistMatches(wantedArtist, normalize(it.artistName)) &&
+                artistMatches(artist, it.artistName) &&
                 (wantedIsVariant || !isVariant(it.trackName))
         }
         val usable = sameSong.filter { it.syncedLyrics != null }
@@ -113,9 +112,28 @@ object LrclibApi {
 
     private fun isVariant(title: String): Boolean = variantWords.containsMatchIn(title)
 
-    // Shazam may list "Artist & Guest" or "Artist feat. Guest" where LRCLIB has only "Artist".
-    private fun artistMatches(wanted: String, found: String): Boolean =
-        wanted == found || wanted.startsWith("$found ") || found.startsWith("$wanted ")
+    // Separators between artist names: punctuation, and joining words as whole words.
+    private val artistSeparators = Regex(
+        """[,&·/;+]|\b(?:feat|ft|featuring|with|x|and|et)\b\.?""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** The individual artist names of a raw artist string, normalized, blanks dropped. */
+    internal fun artistNames(raw: String): List<String> =
+        raw.split(artistSeparators).map { normalize(it) }.filter { it.isNotEmpty() }
+
+    /**
+     * Whether [wanted] (as recognized) and [found] (as listed by LRCLIB) name the same artist. Both are raw strings:
+     * Shazam and LRCLIB spell several artists differently ("A & B", "A, B", "A feat. B", "A/B", "A B", or only "A").
+     * They match when the main (first) artist of one side is among the names of the other side or when all names
+     * joined with spaces are equal (no separators at all). A different artist that merely shares a word ("Star-Lord" vs "Star-Lord Band") does not match.
+     */
+    internal fun artistMatches(wanted: String, found: String): Boolean {
+        val w = artistNames(wanted)
+        val f = artistNames(found)
+        if (w.isEmpty() || f.isEmpty()) return false
+        return w.first() in f || f.first() in w || w.joinToString(" ") == f.joinToString(" ")
+    }
 
     private const val DURATION_TOLERANCE = 3.0
 

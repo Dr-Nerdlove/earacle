@@ -153,4 +153,41 @@ class LrclibApiTest {
         assertEquals(Lyrics.Plain("Hi"), LrclibApi.toLyrics(track(synced = "garbage", plain = "Hi")))
         assertEquals(Lyrics.NotFound, LrclibApi.toLyrics(track(synced = null, plain = null)))
     }
+
+    private val shazamArtist = "Star-Lord Band, Steve Szczepkowski & Yohann Boudreault"
+
+    @Test
+    fun artistMatchesEverySpellingOfSeveralArtists() {
+        listOf(
+            "Star-Lord Band, Steve Szczepkowski, Yohann Boudreault",
+            "Star-Lord Band \u00b7 Steve Szczepkowski \u00b7 Yohann Boudreault",
+            "Star-Lord Band Steve Szczepkowski Yohann Boudreault",
+            "Star-Lord Band & Steve Szczepkowski & Yohann Boudreault",
+            "Star-Lord Band feat. Steve Szczepkowski & Yohann Boudreault",
+            "Star-Lord Band/Steve Szczepkowski/Yohann Boudreault",
+            "Star-Lord Band, Steve Szczepkowski, et, Yohann Boudreault",
+            "Star-Lord Band",
+        ).forEach { assertTrue(it, LrclibApi.artistMatches(shazamArtist, it)) }
+    }
+
+    @Test
+    fun artistDoesNotMatchADifferentArtist() {
+        assertTrue(!LrclibApi.artistMatches("Star-Lord", "Star-Lord Band"))
+        assertTrue(!LrclibApi.artistMatches(shazamArtist, "Jamie Lidell"))
+        assertTrue(!LrclibApi.artistMatches(shazamArtist, "Star-Lord"))
+    }
+
+    @Test
+    fun pickBestFindsLyricsDespiteDifferentArtistSpelling() {
+        val title = "Bit of Good (Bit of Bad)"
+        val tracks = listOf(
+            track(title = title, artist = "Star-Lord Band", duration = 23.0, synced = "[00:01.00] bogus"),
+            track(title = "Little Bit Of Feel Good", artist = "Jamie Lidell", duration = 200.0),
+            track(title = title, artist = "Star-Lord Band, Steve Szczepkowski, Yohann Boudreault", duration = 325.0, synced = "[00:01.00] Real"),
+            track(title = title, artist = "Star-Lord Band feat. Steve Szczepkowski & Yohann Boudreault", duration = 325.0, synced = "[00:02.00] Real 2"),
+        )
+        val best = LrclibApi.pickBest(tracks, title, shazamArtist)
+        assertEquals(325.0, best?.durationSeconds ?: 0.0, 0.01)
+        assertTrue(best?.syncedLyrics?.contains("Real") == true)
+    }
 }
