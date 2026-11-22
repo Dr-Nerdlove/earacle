@@ -270,7 +270,8 @@ private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
         // Half the viewport of padding above and below lets every line, the first and last
         // included, reach the vertical middle.
         val halfHeight = maxHeight / 2
-        LaunchedEffect(current) {
+        // Also re-centre when the area changes size (window resized, split screen).
+        LaunchedEffect(current, maxHeight) {
             if (current < 0) return@LaunchedEffect
             val layout = listState.layoutInfo
             val viewport = layout.viewportSize.height
