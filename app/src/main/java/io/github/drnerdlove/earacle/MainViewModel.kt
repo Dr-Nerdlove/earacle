@@ -122,7 +122,8 @@ class MainViewModel(
     @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
     private suspend fun trackLoop() {
         var misses = 0
-        var pauseMs = SongTracking.RELISTEN_PAUSE_MS
+        var confirmations = 0
+        var rateLimited = false
         while (true) {
             val found = _state.value as? UiState.Found ?: return
             val position = positionSeconds(
@@ -130,12 +131,25 @@ class MainViewModel(
                 found.recordingStartedAtElapsedMs,
                 SystemClock.elapsedRealtime(),
             )
-            delay(SongTracking.nextListenDelayMs(position, found.lyrics.songDurationSeconds, pauseMs))
+            val duration = found.lyrics.songDurationSeconds
+            val pauseMs = if (rateLimited) {
+                SongTracking.RATE_LIMIT_PAUSE_MS
+            } else {
+                SongTracking.pauseMs(confirmations, durationKnown = duration != null)
+            }
+            rateLimited = false
+            delay(SongTracking.nextListenDelayMs(position, duration, pauseMs))
             appVisible.first { it }
             setRelistening(true)
             val result = try {
                 val recording = MicrophoneRecorder.record { }
-                recognizer.recognize(recording).let { it to recording.startedAtElapsedMs }
+                // Silence is never sent to the service.
+                val answer = if (SongTracking.isSilent(recording.samples)) {
+                    RecognitionResult.NoMatch
+                } else {
+                    recognizer.recognize(recording)
+                }
+                answer to recording.startedAtElapsedMs
             } catch (e: CancellationException) {
                 throw e
             } catch (e: MicrophoneException) {
@@ -146,7 +160,6 @@ class MainViewModel(
                 return
             }
             val (answer, startedAt) = result
-            pauseMs = SongTracking.RELISTEN_PAUSE_MS
             when (answer) {
                 is RecognitionResult.Match -> {
                     misses = 0
@@ -162,13 +175,19 @@ class MainViewModel(
                             UiState.Found(answer, startedAt)
                         }
                     }
-                    if (changed) loadLyrics(answer)
+                    if (changed) {
+                        confirmations = 0
+                        loadLyrics(answer)
+                    } else {
+                        confirmations++
+                    }
                 }
                 RecognitionResult.NoMatch, is RecognitionResult.Failure -> {
                     setRelistening(false)
                     misses++
+                    confirmations = 0
                     if (answer is RecognitionResult.Failure && answer.reason == FailureReason.RATE_LIMITED) {
-                        pauseMs = SongTracking.RATE_LIMIT_PAUSE_MS
+                        rateLimited = true
                     }
                     if (misses >= SongTracking.MAX_MISSES) return
                 }

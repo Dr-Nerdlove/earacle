@@ -200,11 +200,15 @@ missing, with a recommendation, and let the people choose.
   - Sync: position from the recognition result + time elapsed since the audio sample. A manual offset
     slider (± a few seconds) as fallback (not built yet).
   - Listening along (built, `SongTracking` + `MainViewModel`): after a first match from the button, the app
-    records 12 s again 15 s after each recognition finished (about every 27 s) while the app is visible
+    records 12 s again after a pause that grows while the same song keeps being confirmed (15 s, then
+    45 s, then 105 s after a recognition finished: about 27 s, 1 min, 2 min between recordings; at most 45 s
+    while the song length is unknown; any miss or a different song starts again at 15 s). Silent
+    recordings (RMS below 60) are not sent to Shazam and count as a miss (the button always sends). The
+    next recording is brought forward to the song's end, so a song change is still noticed; once the end has passed without a new song (e.g. a presenter talking), the normal pause applies again instead of back-to-back recordings. While the app is visible
     (the microphone is silenced in the background on Android 11+, so it waits). The same song only
     replaces the position (lyrics are kept); a different song loads new lyrics. After 4 answers in a
     row without a match it stops (display stays); a rate-limit answer waits 60 s. The song length from
-    LRCLIB caps the shown position and the next recording is brought forward to the song's end.
+    LRCLIB caps the shown position.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
