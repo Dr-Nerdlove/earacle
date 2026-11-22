@@ -46,6 +46,8 @@ import androidx.core.content.ContextCompat
 import io.github.drnerdlove.earacle.lyrics.LyricLine
 import io.github.drnerdlove.earacle.lyrics.Lyrics
 import io.github.drnerdlove.earacle.lyrics.currentLineIndex
+import io.github.drnerdlove.earacle.lyrics.songDurationSeconds
+import io.github.drnerdlove.earacle.recognition.SongTracking
 import io.github.drnerdlove.earacle.recognition.RecognitionResult
 import io.github.drnerdlove.earacle.recognition.formatPosition
 import io.github.drnerdlove.earacle.recognition.positionSeconds
@@ -61,6 +63,16 @@ import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
+
+    override fun onStart() {
+        super.onStart()
+        viewModel.setAppVisible(true)
+    }
+
+    override fun onStop() {
+        viewModel.setAppVisible(false)
+        super.onStop()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -189,7 +201,10 @@ private fun ColumnScope.FoundArea(state: UiState.Found) {
             delay(200)
         }
     }
-    val seconds = positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now)
+    val seconds = SongTracking.displayPosition(
+        positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now),
+        state.lyrics.songDurationSeconds,
+    )
     val position = formatPosition(seconds)
     val positionMs = (seconds * 1000).toLong()
     Text(match.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
@@ -200,6 +215,13 @@ private fun ColumnScope.FoundArea(state: UiState.Found) {
         stringResource(R.string.position_in_song, position),
         style = MaterialTheme.typography.bodyLarge,
     )
+    if (state.relistening) {
+        Text(
+            stringResource(R.string.status_relistening),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     Spacer(Modifier.height(16.dp))
     LyricsArea(state.lyrics, positionMs)
 }

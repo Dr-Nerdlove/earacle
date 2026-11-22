@@ -11,8 +11,9 @@ The app will be available in German and English.
 
 **Early stage (version 0.2.0).** Earacle can now recognize a song: tap "Recognize song", it listens through the
 microphone for 12 seconds, asks the unofficial Shazam service and shows the title, the artist and the current
-position in the song. Synced lyrics, background listening and automatic re-recognition are not built yet; they
-are listed under "Features (planned)".
+position in the song. While the app is open it keeps listening along: about every 27 seconds it recognizes the
+song again, follows song changes and corrects drift; it stops after about two minutes without music. Background
+listening is not built yet; it is listed under "Features (planned)".
 
 ## Features (planned)
 

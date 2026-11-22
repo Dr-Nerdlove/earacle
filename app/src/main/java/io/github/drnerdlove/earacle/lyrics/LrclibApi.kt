@@ -90,11 +90,12 @@ object LrclibApi {
 
     /** Turns a picked entry into what the app shows. Synced lyrics that do not parse fall back to plain. */
     fun toLyrics(track: LrclibTrack): Lyrics {
+        val duration = track.durationSeconds.takeIf { it > 0 }
         track.syncedLyrics?.let { text ->
             val lines = Lrc.parse(text)
-            if (lines.isNotEmpty()) return Lyrics.Synced(lines)
+            if (lines.isNotEmpty()) return Lyrics.Synced(lines, duration)
         }
-        track.plainLyrics?.let { return Lyrics.Plain(it.trim()) }
+        track.plainLyrics?.let { return Lyrics.Plain(it.trim(), duration) }
         return if (track.instrumental) Lyrics.Instrumental else Lyrics.NotFound
     }
 

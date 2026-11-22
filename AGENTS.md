@@ -197,8 +197,14 @@ missing, with a recommendation, and let the people choose.
     because the app is private and never published.
   - Synced lyrics (LRC format) from **LRCLIB** (`lrclib.net`, free, no API key). Send title, artist and
     duration so the right version (radio edit, live, remix) is found.
-  - Sync: position from the recognition result + time elapsed since the audio sample. Re-recognize every
-    20-30 s to correct drift and notice song changes. A manual offset slider (± a few seconds) as fallback.
+  - Sync: position from the recognition result + time elapsed since the audio sample. A manual offset
+    slider (± a few seconds) as fallback (not built yet).
+  - Listening along (built, `SongTracking` + `MainViewModel`): after a first match from the button, the app
+    records 12 s again 15 s after each recognition finished (about every 27 s) while the app is visible
+    (the microphone is silenced in the background on Android 11+, so it waits). The same song only
+    replaces the position (lyrics are kept); a different song loads new lyrics. After 4 answers in a
+    row without a match it stops (display stays); a rate-limit answer waits 60 s. The song length from
+    LRCLIB caps the shown position and the next recording is brought forward to the song's end.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
