@@ -44,9 +44,15 @@ class SongTrackingTest {
     }
 
     @Test
-    fun delayIsZeroPastTheEnd() {
-        assertEquals(0L, SongTracking.nextListenDelayMs(209.0, 200.0, 15_000))
+    fun delayIsZeroRightAtTheEnd() {
         assertEquals(0L, SongTracking.nextListenDelayMs(202.0, 200.0, 15_000))
+    }
+
+    @Test
+    fun delayIsTheNormalPauseOnceTheEndHasPassed() {
+        // The check at the end found no new song: do not record back to back.
+        assertEquals(15_000L, SongTracking.nextListenDelayMs(209.0, 200.0, 15_000))
+        assertEquals(45_000L, SongTracking.nextListenDelayMs(260.0, 200.0, 45_000))
     }
 
     @Test

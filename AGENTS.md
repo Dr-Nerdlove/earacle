@@ -204,7 +204,7 @@ missing, with a recommendation, and let the people choose.
     45 s, then 105 s after a recognition finished: about 27 s, 1 min, 2 min between recordings; at most 45 s
     while the song length is unknown; any miss or a different song starts again at 15 s). Silent
     recordings (RMS below 60) are not sent to Shazam and count as a miss (the button always sends). The
-    next recording is brought forward to the song's end, so a song change is still noticed. While the app is visible
+    next recording is brought forward to the song's end, so a song change is still noticed; once the end has passed without a new song (e.g. a presenter talking), the normal pause applies again instead of back-to-back recordings. While the app is visible
     (the microphone is silenced in the background on Android 11+, so it waits). The same song only
     replaces the position (lyrics are kept); a different song loads new lyrics. After 4 answers in a
     row without a match it stops (display stays); a rate-limit answer waits 60 s. The song length from

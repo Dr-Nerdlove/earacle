@@ -47,11 +47,16 @@ object SongTracking {
         return if (durationKnown) pause else minOf(pause, UNKNOWN_DURATION_MAX_PAUSE_MS)
     }
 
-    /** How long to wait before the next recording: [pauseMs], or less if the song ends sooner. */
+    /**
+     * How long to wait before the next recording: [pauseMs], or less if the song ends sooner. Once the end has
+     * passed (the check at the end found no new song, e.g. a presenter talking), the normal pause applies again,
+     * so the app does not record back to back and give up after a few seconds of speech.
+     */
     fun nextListenDelayMs(positionSeconds: Double, durationSeconds: Double?, pauseMs: Long): Long {
         if (durationSeconds == null) return maxOf(0L, pauseMs)
         val untilEndMs = ((durationSeconds + END_GRACE_SECONDS - positionSeconds) * 1000).toLong()
-        return maxOf(0L, minOf(pauseMs, untilEndMs))
+        if (untilEndMs < 0) return maxOf(0L, pauseMs)
+        return minOf(pauseMs, untilEndMs)
     }
 
     /** The position to show: never beyond the song's length when that is known. */
