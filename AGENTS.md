@@ -253,7 +253,9 @@ missing, with a recommendation, and let the people choose.
     offset only; whether it carries a duration or album was not verified, so none is used). `LrclibApi.pickBest`
     keeps only entries with the same title and artist, drops live/remix/acoustic versions unless the song is
     one, prefers synced over plain lyrics, and among versions of different length takes the length most
-    entries agree on (or the closest to a known duration). Wrong lyrics are worse than none.
+    entries agree on (or the closest to a known duration). Wrong lyrics are worse than none. Artists are compared as lists of names (split at `,` `&` `·` `/` `;` `+` and feat./with/and/et...): a
+    match is the first artist of one side being among the names of the other, or equal names joined (LRCLIB spells
+    multi-artist credits in many ways).
   - `lrclib.net` is not on the cloud environment's network allow-list by default; add the host (via the
     environment tools) to check the real API there.
 - **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
