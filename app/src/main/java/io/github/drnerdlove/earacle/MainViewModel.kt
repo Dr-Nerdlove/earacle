@@ -72,10 +72,13 @@ class MainViewModel(
     @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
     fun recognize() {
         if (isBusy) return
-        trackingJob?.cancel()
+        // A recording for listening along may still hold the microphone: stop it and wait until it is released.
+        val tracking = trackingJob
+        tracking?.cancel()
         _state.value = UiState.Listening(0f)
         job = viewModelScope.launch {
             try {
+                tracking?.join()
                 val recording = MicrophoneRecorder.record { progress ->
                     _state.value = UiState.Listening(progress)
                 }
