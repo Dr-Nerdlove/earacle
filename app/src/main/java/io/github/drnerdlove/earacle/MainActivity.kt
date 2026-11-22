@@ -11,6 +11,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -46,16 +49,19 @@ import androidx.core.content.ContextCompat
 import io.github.drnerdlove.earacle.lyrics.LyricLine
 import io.github.drnerdlove.earacle.lyrics.Lyrics
 import io.github.drnerdlove.earacle.lyrics.currentLineIndex
+import io.github.drnerdlove.earacle.lyrics.displayTitle
 import io.github.drnerdlove.earacle.recognition.RecognitionResult
 import io.github.drnerdlove.earacle.recognition.formatPosition
 import io.github.drnerdlove.earacle.recognition.positionSeconds
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -123,10 +129,25 @@ fun MainContent(state: UiState, onRecognize: () -> Unit, modifier: Modifier = Mo
     val busy = state is UiState.Listening || state is UiState.Recognizing
     val retry = state is UiState.NotFound || state is UiState.Error ||
         state is UiState.PermissionDenied || state is UiState.Found
+    val buttonLabel = stringResource(if (retry) R.string.button_try_again else R.string.button_recognize)
+    if (state is UiState.Found) {
+        // Compact header at the top, lyrics take all remaining space, button always visible.
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            FoundContent(state)
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = onRecognize, enabled = !busy) { Text(buttonLabel) }
+        }
+        return
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(16.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -135,15 +156,9 @@ fun MainContent(state: UiState, onRecognize: () -> Unit, modifier: Modifier = Mo
             style = MaterialTheme.typography.displaySmall,
         )
         Spacer(Modifier.height(24.dp))
-        if (state is UiState.Found) {
-            FoundArea(state)
-        } else {
-            StatusArea(state)
-        }
+        StatusArea(state)
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onRecognize, enabled = !busy) {
-            Text(stringResource(if (retry) R.string.button_try_again else R.string.button_recognize))
-        }
+        Button(onClick = onRecognize, enabled = !busy) { Text(buttonLabel) }
     }
 }
 
@@ -180,7 +195,7 @@ private fun StatusArea(state: UiState) {
 }
 
 @Composable
-private fun ColumnScope.FoundArea(state: UiState.Found) {
+private fun ColumnScope.FoundContent(state: UiState.Found) {
     val match: RecognitionResult.Match = state.match
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(state) {
@@ -192,73 +207,122 @@ private fun ColumnScope.FoundArea(state: UiState.Found) {
     val seconds = positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now)
     val position = formatPosition(seconds)
     val positionMs = (seconds * 1000).toLong()
-    Text(match.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+    Text(
+        text = stringResource(R.string.app_name),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Spacer(Modifier.height(8.dp))
-    Text(match.artist, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-    Spacer(Modifier.height(16.dp))
+    Text(
+        displayTitle(match.title),
+        style = MaterialTheme.typography.headlineSmall,
+        textAlign = TextAlign.Center,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+    Text(
+        match.artist,
+        style = MaterialTheme.typography.titleMedium,
+        textAlign = TextAlign.Center,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+    Spacer(Modifier.height(4.dp))
     Text(
         stringResource(R.string.position_in_song, position),
-        style = MaterialTheme.typography.bodyLarge,
+        style = MaterialTheme.typography.bodyMedium,
     )
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(8.dp))
     LyricsArea(state.lyrics, positionMs)
 }
 
 @Composable
 private fun ColumnScope.LyricsArea(lyrics: Lyrics?, positionMs: Long) {
     when (lyrics) {
-        null -> CircularProgressIndicator()
-        Lyrics.NotFound -> Hint(stringResource(R.string.lyrics_not_found))
-        Lyrics.Instrumental -> Hint(stringResource(R.string.lyrics_instrumental))
-        Lyrics.Failure -> Hint(stringResource(R.string.lyrics_error))
-        is Lyrics.Plain -> LyricsText(lyrics.text, plainNote = true)
+        null -> CenteredInRemainingSpace { CircularProgressIndicator() }
+        Lyrics.NotFound -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_not_found)) }
+        Lyrics.Instrumental -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_instrumental)) }
+        Lyrics.Failure -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_error)) }
+        is Lyrics.Plain -> PlainLyrics(lyrics.text)
         is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs)
     }
+}
+
+@Composable
+private fun ColumnScope.CenteredInRemainingSpace(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) { content() }
 }
 
 @Composable
 private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
     val current = currentLineIndex(lines, positionMs)
     val listState = rememberLazyListState()
-    // Keep the current line about third from the top.
-    LaunchedEffect(current) {
-        if (current >= 0) listState.animateScrollToItem(maxOf(0, current - 2))
-    }
-    LazyColumn(
-        state = listState,
+    BoxWithConstraints(
         modifier = Modifier
-            .weight(1f, fill = false)
+            .weight(1f)
             .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        itemsIndexed(lines) { index, line ->
-            val isCurrent = index == current
-            Text(
-                text = line.text.ifEmpty { "♪" },
-                style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isCurrent) FontWeight.Bold else null,
-                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-            )
+        // Half the viewport of padding above and below lets every line, the first and last
+        // included, reach the vertical middle.
+        val halfHeight = maxHeight / 2
+        // Also re-centre when the area changes size (window resized, split screen).
+        LaunchedEffect(current, maxHeight) {
+            if (current < 0) return@LaunchedEffect
+            val layout = listState.layoutInfo
+            val viewport = layout.viewportSize.height
+            if (viewport <= 0) return@LaunchedEffect
+            val visible = layout.visibleItemsInfo
+            val itemSize = visible.firstOrNull { it.index == current }?.size
+                ?: if (visible.isEmpty()) 0 else visible.sumOf { it.size } / visible.size
+            // The item's start sits at beforeContentPadding minus scrollOffset; its middle
+            // belongs at viewport / 2.
+            val before = layout.beforeContentPadding
+            listState.animateScrollToItem(current, before - viewport / 2 + itemSize / 2)
+            // A line that was off screen has only been estimated; correct once if the guess was off.
+            val actual = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == current }?.size
+            if (actual != null && abs(actual - itemSize) > 2) {
+                listState.animateScrollToItem(current, before - viewport / 2 + actual / 2)
+            }
+        }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = halfHeight),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            itemsIndexed(lines) { index, line ->
+                val isCurrent = index == current
+                Text(
+                    text = line.text.ifEmpty { "♪" },
+                    style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isCurrent) FontWeight.Bold else null,
+                    color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ColumnScope.LyricsText(text: String, plainNote: Boolean) {
-    if (plainNote) {
-        Hint(stringResource(R.string.lyrics_not_synced))
-        Spacer(Modifier.height(8.dp))
-    }
+private fun ColumnScope.PlainLyrics(text: String) {
+    Hint(stringResource(R.string.lyrics_not_synced))
+    Spacer(Modifier.height(8.dp))
     Text(
         text,
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center,
         modifier = Modifier
-            .weight(1f, fill = false)
+            .weight(1f)
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
     )
 }
@@ -278,5 +342,39 @@ private fun Hint(text: String) {
 fun MainContentPreview() {
     EaracleTheme {
         MainContent(UiState.Idle, onRecognize = {})
+    }
+}
+
+private val previewMatch = RecognitionResult.Match(
+    title = "Zero to Hero (Music from \"Marvel's Guardians of the Galaxy: Original Video Game Soundtrack\")",
+    artist = "Some Artist & The Band",
+    offsetSeconds = 30.0,
+    shazamKey = null,
+    coverArtUrl = null,
+)
+
+private val previewLyrics = Lyrics.Synced(
+    List(30) { LyricLine(it * 4000L, "Lyric line number ${it + 1} of the preview song") },
+)
+
+private fun previewFound() = UiState.Found(
+    previewMatch,
+    recordingStartedAtElapsedMs = SystemClock.elapsedRealtime(),
+    lyrics = previewLyrics,
+)
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 380)
+@Composable
+fun FoundSmallHeightPreview() {
+    EaracleTheme {
+        MainContent(previewFound(), onRecognize = {})
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 780)
+@Composable
+fun FoundPhoneHeightPreview() {
+    EaracleTheme {
+        MainContent(previewFound(), onRecognize = {})
     }
 }
