@@ -327,6 +327,9 @@ repository belongs to someone else, these points still apply unless "Project kno
   - Shazam returns no match for audio windows of 15 s or more; send 12 s (SongRec does the same).
   - Shazam's `offset` is the position in the song at the start of the sample, so the current position is
     offset + time since the recording started (confirmed on the owner's phone with v0.2.0).
+  - `apksigner verify --print-certs` prints `V2 Signer: certificate SHA-256 digest: ...` (and maybe a V3
+    line) for this app, not `Signer #1 ...`; the certificate checks in the workflows read any signer line.
+    Test a change to them with a build started by hand on the branch before releasing.
   - Not every LRCLIB track has synced lyrics; fall back to plain lyrics or a clear message.
   - Lyrics come from LRCLIB's `/api/search` (checked against the real API): `/api/get` needs the exact album
     and duration, which the recognition result does not give (the Shazam answer is parsed for title, artist,
