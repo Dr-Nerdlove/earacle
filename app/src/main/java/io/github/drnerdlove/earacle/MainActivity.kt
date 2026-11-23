@@ -265,12 +265,7 @@ private fun ColumnScope.FoundContent(
     )
     val position = formatPosition(seconds)
     val positionMs = (seconds * 1000).toLong()
-    Text(
-        text = stringResource(R.string.app_name),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(8.dp))
+    // No app name above the song: the lyrics get the space.
     Text(
         displayTitle(match.title),
         style = MaterialTheme.typography.headlineSmall,
