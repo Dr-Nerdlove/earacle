@@ -18,4 +18,5 @@
     <string name="lyrics_instrumental">Dieses Lied ist instrumental, deshalb gibt es keinen Text.</string>
     <string name="lyrics_error">Der Text konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es nochmal.</string>
     <string name="lyrics_not_synced">Zu diesem Lied gibt es keinen zeitlich abgestimmten Text, deshalb siehst du hier den normalen Text.</string>
+    <string name="lyrics_back_to_current">Zur aktuellen Zeile</string>
 </resources>
