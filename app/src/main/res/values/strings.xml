@@ -19,4 +19,5 @@
     <string name="lyrics_instrumental">This song is instrumental, so there are no lyrics.</string>
     <string name="lyrics_error">The lyrics could not be loaded. Check your internet connection and try again.</string>
     <string name="lyrics_not_synced">No synced lyrics exist for this song, so here is the plain text.</string>
+    <string name="lyrics_back_to_current">Back to current line</string>
 </resources>

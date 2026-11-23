@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,9 +28,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -43,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
@@ -61,6 +66,7 @@ import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -288,6 +294,15 @@ private fun ColumnScope.CenteredInRemainingSpace(content: @Composable () -> Unit
 private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
     val current = currentLineIndex(lines, positionMs)
     val listState = rememberLazyListState()
+    // The list follows the current line until the user scrolls by hand; a button brings it back.
+    // A new song (new lines) follows again.
+    var following by remember(lines) { mutableStateOf(true) }
+    LaunchedEffect(listState) {
+        // Only a finger on the list starts a drag; the automatic scrolling below does not.
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) following = false
+        }
+    }
     BoxWithConstraints(
         modifier = Modifier
             .weight(1f)
@@ -297,8 +312,8 @@ private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
         // included, reach the vertical middle.
         val halfHeight = maxHeight / 2
         // Also re-centre when the area changes size (window resized, split screen).
-        LaunchedEffect(current, maxHeight) {
-            if (current < 0) return@LaunchedEffect
+        LaunchedEffect(current, maxHeight, following) {
+            if (!following || current < 0) return@LaunchedEffect
             val layout = listState.layoutInfo
             val viewport = layout.viewportSize.height
             if (viewport <= 0) return@LaunchedEffect
@@ -332,6 +347,20 @@ private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
+                )
+            }
+        }
+        if (!following) {
+            FloatingActionButton(
+                onClick = { following = true },
+                shape = CircleShape,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_sync),
+                    contentDescription = stringResource(R.string.lyrics_back_to_current),
                 )
             }
         }
