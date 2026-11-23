@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -32,7 +33,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -49,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
@@ -160,9 +163,35 @@ fun MainContent(state: UiState, onRecognize: () -> Unit, modifier: Modifier = Mo
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            FoundContent(state)
+            // Synced lyrics follow the current line until the user scrolls them by hand; the round
+            // button next to "Try again" brings them back. A new song follows again.
+            val syncedLines = (state.lyrics as? Lyrics.Synced)?.lines
+            var following by remember(syncedLines) { mutableStateOf(true) }
+            FoundContent(state, following, onScrolledByHand = { following = false })
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onRecognize, enabled = !busy) { Text(buttonLabel) }
+            Box(modifier = Modifier.fillMaxWidth()) {
+                // "Try again" stays centred; the round button sits at the end of the same row
+                // and is exactly as high as it.
+                Button(
+                    onClick = onRecognize,
+                    enabled = !busy,
+                    modifier = Modifier.align(Alignment.Center),
+                ) { Text(buttonLabel) }
+                if (syncedLines != null && !following) {
+                    FilledTonalIconButton(
+                        onClick = { following = true },
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(ButtonDefaults.MinHeight),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_sync),
+                            contentDescription = stringResource(R.string.lyrics_back_to_current),
+                        )
+                    }
+                }
+            }
         }
         return
     }
@@ -217,7 +246,11 @@ private fun StatusArea(state: UiState) {
 }
 
 @Composable
-private fun ColumnScope.FoundContent(state: UiState.Found) {
+private fun ColumnScope.FoundContent(
+    state: UiState.Found,
+    following: Boolean,
+    onScrolledByHand: () -> Unit,
+) {
     val match: RecognitionResult.Match = state.match
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(state) {
@@ -265,18 +298,23 @@ private fun ColumnScope.FoundContent(state: UiState.Found) {
         )
     }
     Spacer(Modifier.height(8.dp))
-    LyricsArea(state.lyrics, positionMs)
+    LyricsArea(state.lyrics, positionMs, following, onScrolledByHand)
 }
 
 @Composable
-private fun ColumnScope.LyricsArea(lyrics: Lyrics?, positionMs: Long) {
+private fun ColumnScope.LyricsArea(
+    lyrics: Lyrics?,
+    positionMs: Long,
+    following: Boolean,
+    onScrolledByHand: () -> Unit,
+) {
     when (lyrics) {
         null -> CenteredInRemainingSpace { CircularProgressIndicator() }
         Lyrics.NotFound -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_not_found)) }
         Lyrics.Instrumental -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_instrumental)) }
         Lyrics.Failure -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_error)) }
         is Lyrics.Plain -> PlainLyrics(lyrics.text)
-        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs)
+        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, following, onScrolledByHand)
     }
 }
 
@@ -291,16 +329,20 @@ private fun ColumnScope.CenteredInRemainingSpace(content: @Composable () -> Unit
 }
 
 @Composable
-private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
+private fun ColumnScope.SyncedLyrics(
+    lines: List<LyricLine>,
+    positionMs: Long,
+    following: Boolean,
+    onScrolledByHand: () -> Unit,
+) {
     val current = currentLineIndex(lines, positionMs)
     val listState = rememberLazyListState()
-    // The list follows the current line until the user scrolls by hand; a button brings it back.
-    // A new song (new lines) follows again.
-    var following by remember(lines) { mutableStateOf(true) }
+    // The effect below outlives recompositions; always call the latest callback.
+    val currentOnScrolledByHand by rememberUpdatedState(onScrolledByHand)
     LaunchedEffect(listState) {
         // Only a finger on the list starts a drag; the automatic scrolling below does not.
         listState.interactionSource.interactions.collect { interaction ->
-            if (interaction is DragInteraction.Start) following = false
+            if (interaction is DragInteraction.Start) currentOnScrolledByHand()
         }
     }
     BoxWithConstraints(
@@ -347,20 +389,6 @@ private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
-                )
-            }
-        }
-        if (!following) {
-            FloatingActionButton(
-                onClick = { following = true },
-                shape = CircleShape,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_sync),
-                    contentDescription = stringResource(R.string.lyrics_back_to_current),
                 )
             }
         }
