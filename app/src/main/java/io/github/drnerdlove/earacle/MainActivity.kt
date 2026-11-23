@@ -27,10 +27,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -63,6 +65,7 @@ import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -344,13 +347,17 @@ private fun ColumnScope.SyncedLyrics(lines: List<LyricLine>, positionMs: Long) {
             }
         }
         if (!following) {
-            ExtendedFloatingActionButton(
+            FloatingActionButton(
                 onClick = { following = true },
+                shape = CircleShape,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),
             ) {
-                Text(stringResource(R.string.lyrics_back_to_current))
+                Icon(
+                    painter = painterResource(R.drawable.ic_sync),
+                    contentDescription = stringResource(R.string.lyrics_back_to_current),
+                )
             }
         }
     }
