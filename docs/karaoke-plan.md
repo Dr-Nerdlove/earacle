@@ -27,7 +27,7 @@ singing, since one looks at the screen anyway).
 ## Status
 
 - [x] 1. Tap to sync and fine offset - branch `feature/tap-to-sync` 
-- [ ] 2. Countdown before singing starts again - branch `feature/countdown`
+- [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR #29
 - [ ] 3. The current line fills up - branch `feature/line-fill`
 - [ ] 4. Word timing where the lyrics have it - branch `feature/word-timing`
 - [ ] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`
@@ -145,6 +145,13 @@ short gap, the dot count at the boundaries (exactly 3 s, 2 s, 1 s, 0 s before), 
 
 **On the phone:** a song with a long intro and one with an instrumental break; the dots must go out in time
 with the music and the last one must go out when the singer starts.
+
+**Built (point 2):** two choices the plan left open. (a) The dots show `ceil(seconds left)` of three, so with
+exactly 3 s, 2 s, 1 s left there are 3, 2, 1 dots and the last one goes out at the start of the line (this matches
+"3, 2, 1" and the phone check; the sentence "go out at 3 s, 2 s and 1 s before" would have left the last
+second empty). (b) The "next line" is the next line **with text**, and the pause starts at the end of the last
+line with text, so an empty line in the middle of a pause does not restart or end the countdown. The preview
+(brighter next line) lasts for the whole pause. No new texts, so nothing to translate.
 
 ## 3. The current line fills up
 

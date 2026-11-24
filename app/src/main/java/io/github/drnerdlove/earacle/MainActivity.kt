@@ -58,13 +58,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
+import io.github.drnerdlove.earacle.lyrics.CountdownTiming
 import io.github.drnerdlove.earacle.lyrics.LyricLine
 import io.github.drnerdlove.earacle.lyrics.SyncShift
 import io.github.drnerdlove.earacle.lyrics.formatShift
 import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.lyrics.Lyrics
+import io.github.drnerdlove.earacle.lyrics.countdown
 import io.github.drnerdlove.earacle.lyrics.currentLineIndex
 import io.github.drnerdlove.earacle.lyrics.displayTitle
 import io.github.drnerdlove.earacle.lyrics.songDurationSeconds
@@ -76,6 +79,8 @@ import kotlinx.coroutines.delay
 import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -292,12 +297,18 @@ private fun ColumnScope.FoundContent(
             delay(200)
         }
     }
-    val seconds = SongTracking.displayPosition(
-        positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now),
-        state.lyrics.songDurationSeconds,
-    )
-    // The manual shift applies to the shown time and to the lyrics alike.
-    val positionMs = syncedPositionMs((seconds * 1000).toLong(), state.shiftMs)
+    // The song position (with the manual shift, which applies to the shown time and to the lyrics alike)
+    // at a given SystemClock.elapsedRealtime(). The countdown dots call it once per frame.
+    val positionAt = remember(state) {
+        { elapsedMs: Long ->
+            val seconds = SongTracking.displayPosition(
+                positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, elapsedMs),
+                state.lyrics.songDurationSeconds,
+            )
+            syncedPositionMs((seconds * 1000).toLong(), state.shiftMs)
+        }
+    }
+    val positionMs = positionAt(now)
     val position = formatPosition(positionMs / 1000.0)
     // No app name above the song: the lyrics get the space.
     Text(
@@ -330,13 +341,14 @@ private fun ColumnScope.FoundContent(
         ShiftRow(state.shiftMs, onNudge, onResetShift)
     }
     Spacer(Modifier.height(8.dp))
-    LyricsArea(state.lyrics, positionMs, following, onScrolledByHand, onTapLine)
+    LyricsArea(state.lyrics, positionMs, positionAt, following, onScrolledByHand, onTapLine)
 }
 
 @Composable
 private fun ColumnScope.LyricsArea(
     lyrics: Lyrics?,
     positionMs: Long,
+    positionAt: (Long) -> Long,
     following: Boolean,
     onScrolledByHand: () -> Unit,
     onTapLine: (Long) -> Unit,
@@ -347,7 +359,7 @@ private fun ColumnScope.LyricsArea(
         Lyrics.Instrumental -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_instrumental)) }
         Lyrics.Failure -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_error)) }
         is Lyrics.Plain -> PlainLyrics(lyrics.text)
-        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, following, onScrolledByHand, onTapLine)
+        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, positionAt, following, onScrolledByHand, onTapLine)
     }
 }
 
@@ -365,11 +377,16 @@ private fun ColumnScope.CenteredInRemainingSpace(content: @Composable () -> Unit
 private fun ColumnScope.SyncedLyrics(
     lines: List<LyricLine>,
     positionMs: Long,
+    positionAt: (Long) -> Long,
     following: Boolean,
     onScrolledByHand: () -> Unit,
     onTapLine: (Long) -> Unit,
 ) {
     val current = currentLineIndex(lines, positionMs)
+    // Set during a long pause before the next line: it gets the countdown dots and a brighter preview.
+    val pause = countdown(lines, positionMs)
+    // The dots stand at the line being sung, or above the first line before it starts.
+    val dotsHost = maxOf(current, 0)
     val listState = rememberLazyListState()
     // The effect below outlives recompositions; always call the latest callback.
     val currentOnScrolledByHand by rememberUpdatedState(onScrolledByHand)
@@ -414,20 +431,95 @@ private fun ColumnScope.SyncedLyrics(
         ) {
             itemsIndexed(lines) { index, line ->
                 val isCurrent = index == current
-                Text(
-                    text = line.text.ifEmpty { "♪" },
-                    style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isCurrent) FontWeight.Bold else null,
-                    color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
+                val isBlank = line.text.isBlank()
+                val isDotsHost = index == dotsHost
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onTapLine(line.timeMs) }
                         .padding(vertical = 4.dp),
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // Before the first line the dots stand above it; a pause (♪) shows them in its place.
+                    if (isDotsHost && current < 0 && !isBlank) {
+                        CountdownSlot(pause != null, lines, positionAt)
+                    }
+                    if (isDotsHost && isBlank && pause != null) {
+                        CountdownSlot(true, lines, positionAt)
+                    } else {
+                        Text(
+                            text = if (isBlank) "♪" else line.text,
+                            style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isCurrent) FontWeight.Bold else null,
+                            color = when {
+                                isCurrent -> MaterialTheme.colorScheme.primary
+                                // The next line to sing is already a little brighter during the countdown.
+                                pause != null && index == pause.nextIndex -> MaterialTheme.colorScheme.onSurface
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (isDotsHost && current >= 0 && !isBlank) {
+                        CountdownSlot(pause != null, lines, positionAt)
+                    }
+                }
             }
         }
     }
+}
+
+/** Height reserved for the countdown dots, so a line does not change size when they appear. */
+private val CountdownSlotHeight = 20.dp
+
+/** A fixed-height row that holds the countdown dots while [show] is true. */
+@Composable
+private fun CountdownSlot(show: Boolean, lines: List<LyricLine>, positionAt: (Long) -> Long) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(CountdownSlotHeight),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (show) CountdownDots(lines, positionAt)
+    }
+}
+
+/**
+ * The three dots of the countdown, redrawn on every frame. The position is read where the dots are drawn
+ * (in `drawBehind`), so a frame redraws only these dots and does not recompose the lyrics list.
+ */
+@Composable
+private fun CountdownDots(lines: List<LyricLine>, positionAt: (Long) -> Long) {
+    val latestLines by rememberUpdatedState(lines)
+    val latestPositionAt by rememberUpdatedState(positionAt)
+    var frameTime by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            withFrameMillis { frameTime = SystemClock.elapsedRealtime() }
+        }
+    }
+    val lit = MaterialTheme.colorScheme.primary
+    val out = lit.copy(alpha = 0.2f)
+    val dot = 8.dp
+    val gap = 8.dp
+    Box(
+        modifier = Modifier
+            .size(width = dot * CountdownTiming.DOTS + gap * (CountdownTiming.DOTS - 1), height = dot)
+            .drawBehind {
+                val litCount = countdown(latestLines, latestPositionAt(frameTime))?.litDots ?: 0
+                val radius = dot.toPx() / 2
+                val step = (dot + gap).toPx()
+                for (i in 0 until CountdownTiming.DOTS) {
+                    drawCircle(
+                        color = if (i < litCount) lit else out,
+                        radius = radius,
+                        center = Offset(radius + i * step, radius),
+                    )
+                }
+            },
+    )
 }
 
 /** "−0.5 s", the current shift (tap to reset) and "+0.5 s"; positive moves the lyrics ahead. */

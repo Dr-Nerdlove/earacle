@@ -266,6 +266,14 @@ repository belongs to someone else, these points still apply unless "Project kno
     (positive = lyrics ahead, next line sooner), kept by the same-song `copy`, reset by any new `Found`. A tap
     counts only within 30 s of the shown position; the shift is limited to ±30 s. Listening-along timing
     (`SongTracking`) uses the unshifted position.
+  - Countdown (built, point 2, `lyrics/Countdown.kt`, `lyrics/LineTiming.kt`): in a pause of at least 6 s
+    (measured from the estimated end of the last line with text, or from 0) before the next line with text,
+    three dots show where singing starts again: under the current line, in place of the ♪, or above the first
+    line. Empty lines do not interrupt a pause. Dots lit = started seconds left (3 s: 3 dots, 2 s: 2, 1 s: 1,
+    0 s: none), so the last one goes out as the singer starts. The dots are drawn per frame (`withFrameMillis`,
+    read in `drawBehind`, only while a pause is on); the list itself still updates every 200 ms.
+    `estimatedLineEndMs` (guess: `max(1.5 s, 90 ms x characters)`, capped at the next line) is shared with
+    point 3.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
