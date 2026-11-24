@@ -27,7 +27,7 @@ singing, since one looks at the screen anyway).
 ## Status
 
 - [x] 1. Tap to sync and fine offset - branch `feature/tap-to-sync` 
-- [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR to be numbered by GitHub
+- [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR #29
 - [ ] 3. The current line fills up - branch `feature/line-fill`
 - [ ] 4. Word timing where the lyrics have it - branch `feature/word-timing`
 - [ ] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`
