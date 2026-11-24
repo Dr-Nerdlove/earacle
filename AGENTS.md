@@ -247,8 +247,11 @@ repository belongs to someone else, these points still apply unless "Project kno
     that the API is unofficial and may break.
   - Synced lyrics (LRC format) from **LRCLIB** (`lrclib.net`, free, no API key). Send title, artist and
     duration so the right version (radio edit, live, remix) is found.
-  - Sync: position from the recognition result + time elapsed since the audio sample. A manual offset
-    slider (± a few seconds) as fallback (not built yet).
+  - Sync: position from the recognition result + time elapsed since the audio sample. A manual
+    correction (tap the line being sung, ±0.5 s steps) is planned as point 1 of `docs/karaoke-plan.md`.
+  - Karaoke features (decided 2026-11-24, not built yet): `docs/karaoke-plan.md` plans six points (tap to
+    sync, countdown, line fill, word timing, backing vocals, stage mode), one session and pull request each,
+    in that order; it also records what real LRCLIB lyrics contain and what was decided against and why.
   - Listening along (built, `SongTracking` + `MainViewModel`): after a first match from the button, the app
     records 12 s again after a pause that grows while the same song keeps being confirmed (15 s, then
     45 s, then 105 s after a recognition finished: about 27 s, 1 min, 2 min between recordings; at most 45 s

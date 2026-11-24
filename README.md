@@ -36,7 +36,9 @@ the screen off) is not built yet; see "Planned".
 ## Planned
 
 - Listening with the screen off, in the background, through a foreground service
-- Manual offset slider to fix the timing by hand
+- Karaoke features for singing along: tap the line being sung to fix the timing, a countdown before singing
+  starts again, the current line filling up as it is sung, backing vocals shown smaller, and a stage mode with
+  very large text (see [the plan](docs/karaoke-plan.md))
 - Possible fallback recognition with Olaf against your own music library, in case the unofficial Shazam API
   stops working
 
