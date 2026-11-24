@@ -5,39 +5,46 @@
 Earacle (ear + oracle) is a personal Android app. It listens through the microphone to music playing nearby (for
 example a radio), recognizes the song and shows its lyrics line by line, in sync with the music.
 
-The app will be available in German and English.
+The interface is in German and English and follows the phone's language.
 
 ## Status
 
-**Early stage (version 0.4.1).** Earacle can now recognize a song: tap "Recognize song", it listens through the
-microphone for 12 seconds, asks the unofficial Shazam service and shows the title, the artist, the current
-position in the song and the lyrics from LRCLIB, with the current line highlighted and kept in the middle (scroll by hand to read ahead; a round button with a sync arrow next to "Try again" jumps back to the current line). While the app is open it keeps listening along: it recognizes the song
-again (every 27 seconds at first, then less often while the song is confirmed, and always around the end of the
-song), skips silence, follows song changes and corrects drift; it stops after about two minutes without music. The screen
-stays on while the app is open. Background
-listening is not built yet; it is listed under "Features (planned)".
+**Early stage (version 0.4.1).** Earacle recognizes a song from the microphone, shows its title, artist and
+position, and shows the synced lyrics with the current line highlighted. It keeps listening along and follows
+song changes, but only while the app is open; the screen stays on meanwhile. Listening in the background (with the
+screen off) is not built yet; see "Planned".
 
-## Features (planned)
+## Features
 
-- Listens to nearby music through the microphone, also with the screen off
-- Recognizes the song that is playing (works today: title, artist and position in the song)
-- Shows synced lyrics, one line at a time, following the music
-- Notices when the song changes
-- Manual offset slider to fix the timing by hand
+- Recognizes the song that is playing with one tap on "Recognize song": title, artist and position in the song
+- Shows synced lyrics from LRCLIB with the current line highlighted and centred; scroll freely to read ahead,
+  and the sync button jumps back to the current line
+- Shows plain lyrics, or a clear message, when no synced lyrics exist
+- Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
+  recordings in a row without a match
 - Interface in German and English
+
+## Planned
+
+- Listening with the screen off, in the background, through a foreground service
+- Manual offset slider to fix the timing by hand
+- Possible fallback recognition with Olaf against your own music library, in case the unofficial Shazam API
+  stops working
 
 ## How it works
 
-Planned design:
-
-1. **Listening:** the microphone is captured in a foreground service, so listening continues in the background.
-2. **Recognition:** the song is identified through the unofficial (reverse-engineered) Shazam API, as used by
-   open-source projects such as SongRec, ShazamIO and MusicRecognizer (Audile).
-3. **Lyrics:** synced lyrics (LRC format) come from [LRCLIB](https://lrclib.net), which is free and needs no
-   API key.
-4. **Sync:** the position in the song comes from the recognition result plus the time elapsed since then. Earacle
-   re-recognizes the song every 20-30 seconds to correct drift. If the timing is still off, the manual offset
-   slider is the fallback.
+1. **Listening:** while the app is visible, it records 12 seconds of audio with `AudioRecord`.
+2. **Recognition:** a fingerprint of the recording (ported from SongRec) is sent to the unofficial
+   (reverse-engineered) Shazam API, as used by open-source projects such as SongRec, ShazamIO and
+   MusicRecognizer (Audile). Shazam's offset is the position in the song at the start of the sample, so the
+   current position is the offset plus the time since the recording started.
+3. **Lyrics:** [LRCLIB](https://lrclib.net), which is free and needs no API key, is searched with title and
+   artist. Earacle picks the matching version: no live or remix version unless the song is one, and synced
+   lyrics are preferred over plain ones.
+4. **Listening along:** after a first match, the app records again after a pause that grows while the same song
+   keeps being confirmed (about 27 seconds, then 1 minute, then 2 minutes between recordings). The next
+   recording is brought forward to the song's end, so a song change is noticed. Silence is not sent to
+   Shazam. After 4 misses in a row it stops, and on a rate limit it waits 60 seconds.
 
 **Please note:** the unofficial Shazam API is not endorsed by Apple or Shazam and may break at any time. Earacle
 is a personal project and is not published in any store.
@@ -45,6 +52,9 @@ is a personal project and is not published in any store.
 Built with Kotlin and Jetpack Compose.
 
 ## Install
+
+Requirements: Android 10 or newer and an internet connection. The app asks for microphone access on first
+use.
 
 Download the APK from the latest release:
 
@@ -62,7 +72,8 @@ To try a branch before it is merged: **Actions → Build → Run workflow**, pic
 
 ## Release
 
-1. Raise `versionName` and `versionCode` in `app/build.gradle.kts` in a pull request and merge it.
+1. Raise `versionName` and `versionCode` in `app/build.gradle.kts` in a pull request, with the release notes in
+   its description, and merge it.
 2. **Actions → Release → Run workflow**, enter the version with a `v` (for example `v0.4.0`), **Run workflow**.
 
 The workflow checks the version, builds and signs the APK, creates the tag and the GitHub Release and attaches
@@ -77,8 +88,9 @@ the APK.
 - GitHub Actions runs the unit tests and checks that the app compiles on every pull request
   (`.github/workflows/build.yml`), builds releases (`.github/workflows/release.yml`) and scans every push and
   pull request for leaked secrets with gitleaks (`.github/workflows/gitleaks.yml`).
-- Unit tests (JUnit 4) for the fingerprint, the Shazam request and answer handling and the position maths live
-  in `app/src/test`. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request.
+- Unit tests (JUnit 4) in `app/src/test` cover the fingerprint, the Shazam request and answer handling, the
+  position maths, the listening-along timing (`SongTracking`), LRC parsing, the LRCLIB version choice and the
+  displayed title. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request.
   Microphone, real recognition and the screen can only be checked on a real phone.
 
 ## Credits
