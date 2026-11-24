@@ -32,6 +32,8 @@ the screen off) is not built yet; see "Planned".
   value resets it. The correction stays while the app listens along and resets for a new song
 - Three dots count down in a long pause (before the first line, in an instrumental part, in a long gap): they go
   out one by one in the last 3 seconds, and the next line is shown a little brighter
+- The line being sung fills up from left to right in the highlight colour, at the pace it is sung (estimated
+  from its length); wrapped lines fill one visual line after the other
 - Shows plain lyrics, or a clear message, when no synced lyrics exist
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
   recordings in a row without a match
@@ -40,7 +42,7 @@ the screen off) is not built yet; see "Planned".
 ## Planned
 
 - Listening with the screen off, in the background, through a foreground service
-- Karaoke features for singing along: the current line filling up as it is sung, backing vocals shown
+- Karaoke features for singing along: word timing where the lyrics have it, backing vocals shown
   smaller, and a stage mode with very large text (see [the plan](docs/karaoke-plan.md))
 - Possible fallback recognition with Olaf against your own music library, in case the unofficial Shazam API
   stops working

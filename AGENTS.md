@@ -274,6 +274,11 @@ repository belongs to someone else, these points still apply unless "Project kno
     read in `drawBehind`, only while a pause is on); the list itself still updates every 200 ms.
     `estimatedLineEndMs` (guess: `max(1.5 s, 90 ms x characters)`, capped at the next line) is shared with
     point 3.
+  - Line fill (built, point 3, `lyrics/LineFill.kt`): the current line fills from left to right in the
+    highlight colour (rest muted) at an even pace from its start to `estimatedLineEndMs`, then stays full.
+    Fill counted in code points, so emoji are never cut. Drawn per frame in `FillingLine`: the highlighted text
+    in an offscreen `graphicsLayer`, the unsung part recoloured with a `SrcAtop` rectangle per visual line
+    from the `TextLayoutResult`; only this line redraws each frame.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple

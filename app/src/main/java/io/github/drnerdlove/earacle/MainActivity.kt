@@ -80,7 +80,16 @@ import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.style.ResolvedTextDirection
+import io.github.drnerdlove.earacle.lyrics.filledTextIndex
+import io.github.drnerdlove.earacle.lyrics.lineProgress
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -446,6 +455,8 @@ private fun ColumnScope.SyncedLyrics(
                     }
                     if (isDotsHost && isBlank && pause != null) {
                         CountdownSlot(true, lines, positionAt)
+                    } else if (isCurrent && !isBlank) {
+                        FillingLine(lines, index, positionAt)
                     } else {
                         Text(
                             text = if (isBlank) "♪" else line.text,
@@ -468,6 +479,71 @@ private fun ColumnScope.SyncedLyrics(
             }
         }
     }
+}
+
+/**
+ * The line being sung: drawn in the highlight colour, with the part not sung yet recoloured to a muted
+ * colour. The filled part grows at an even pace ([lineProgress]) and wraps with the text: each visual line
+ * fills after the one above it. The position is read where the line is drawn (in `drawWithContent`), so a
+ * frame redraws only this line and does not recompose the lyrics list.
+ */
+@Composable
+private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -> Long) {
+    val latestLines by rememberUpdatedState(lines)
+    val latestPositionAt by rememberUpdatedState(positionAt)
+    var frameTime by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            withFrameMillis { frameTime = SystemClock.elapsedRealtime() }
+        }
+    }
+    val text = lines[index].text
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Center,
+        onTextLayout = { layout = it },
+        modifier = Modifier
+            .fillMaxWidth()
+            // Offscreen, so the muted colour below (SrcAtop) only lands on the letters, not on the background.
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val textLayout = layout ?: return@drawWithContent
+                // The layout can still belong to the previous text for one frame.
+                if (textLayout.layoutInput.text.text != text) return@drawWithContent
+                val progress = lineProgress(latestLines, index, latestPositionAt(frameTime))
+                val filledEnd = filledTextIndex(text, progress)
+                for (line in 0 until textLayout.lineCount) {
+                    val lineEnd = textLayout.getLineEnd(line, visibleEnd = true)
+                    if (filledEnd >= lineEnd) continue
+                    val top = textLayout.getLineTop(line)
+                    val bottom = textLayout.getLineBottom(line)
+                    // The edge of the filled part on this visual line; centred text starts at the line's own
+                    // left edge, not at 0, which the layout's position already accounts for.
+                    val (left, right) = if (filledEnd <= textLayout.getLineStart(line)) {
+                        0f to size.width
+                    } else {
+                        val x = textLayout.getHorizontalPosition(filledEnd, usePrimaryDirection = true)
+                        if (textLayout.getParagraphDirection(filledEnd) == ResolvedTextDirection.Rtl) {
+                            0f to x
+                        } else {
+                            x to size.width
+                        }
+                    }
+                    drawRect(
+                        color = muted,
+                        topLeft = Offset(left, top),
+                        size = Size(right - left, bottom - top),
+                        blendMode = BlendMode.SrcAtop,
+                    )
+                }
+            },
+    )
 }
 
 /** Height reserved for the countdown dots, so a line does not change size when they appear. */

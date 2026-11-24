@@ -28,7 +28,7 @@ singing, since one looks at the screen anyway).
 
 - [x] 1. Tap to sync and fine offset - branch `feature/tap-to-sync` 
 - [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR #29
-- [ ] 3. The current line fills up - branch `feature/line-fill`
+- [x] 3. The current line fills up - branch `feature/line-fill`, PR #PRNUM
 - [ ] 4. Word timing where the lyrics have it - branch `feature/word-timing`
 - [ ] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`
 - [ ] 6. Stage mode - branch `feature/stage-mode`
@@ -179,6 +179,16 @@ not clamped to 1.
 
 **On the phone:** does the fill keep pace with the singer for normal and fast lines (tune `MS_PER_CHAR`)?
 Is it smooth? Are wrapped lines filled in the right order? Light and dark mode.
+
+**Built (point 3):** `lyrics/LineFill.kt` (`lineProgress`, `filledCharacters`, `filledTextIndex`). An empty
+line has nothing to fill (progress 0); a line whose next line starts at the same moment is full as soon as it
+has started. Characters are counted by code points (as `visibleCharacterCount` does), so emoji and other
+characters made of two UTF-16 units are never cut in half; a letter with a separate combining accent may count
+as two, which only shifts the fill by one character. Drawing (`FillingLine` in `MainActivity.kt`): the Text is
+drawn in the highlight colour in an offscreen `graphicsLayer`, and the part not sung yet is painted over in
+the muted colour with `BlendMode.SrcAtop`, so only the letters change colour; per visual line, from
+`TextLayoutResult.getHorizontalPosition` to the edge (right-to-left text from the left edge). No experimental
+text API is needed. No new texts, so nothing to translate.
 
 ## 4. Word timing where the lyrics have it
 
