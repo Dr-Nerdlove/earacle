@@ -18,7 +18,12 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -56,6 +61,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import io.github.drnerdlove.earacle.lyrics.LyricLine
+import io.github.drnerdlove.earacle.lyrics.SyncShift
+import io.github.drnerdlove.earacle.lyrics.formatShift
+import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.lyrics.Lyrics
 import io.github.drnerdlove.earacle.lyrics.currentLineIndex
 import io.github.drnerdlove.earacle.lyrics.displayTitle
@@ -146,11 +154,26 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
-    MainContent(state, onRecognize, modifier)
+    MainContent(
+        state,
+        onRecognize,
+        modifier,
+        onTapLine = { viewModel.tapLine(it) },
+        onNudge = viewModel::nudgeShift,
+        onResetShift = viewModel::resetShift,
+    )
 }
 
 @Composable
-fun MainContent(state: UiState, onRecognize: () -> Unit, modifier: Modifier = Modifier) {
+fun MainContent(
+    state: UiState,
+    onRecognize: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** A lyric line was tapped as "being sung now"; returns whether the tap counted. */
+    onTapLine: (Long) -> Boolean = { false },
+    onNudge: (Long) -> Unit = {},
+    onResetShift: () -> Unit = {},
+) {
     val busy = state is UiState.Listening || state is UiState.Recognizing
     val retry = state is UiState.NotFound || state is UiState.Error ||
         state is UiState.PermissionDenied || state is UiState.Found
@@ -167,7 +190,14 @@ fun MainContent(state: UiState, onRecognize: () -> Unit, modifier: Modifier = Mo
             // button next to "Try again" brings them back. A new song follows again.
             val syncedLines = (state.lyrics as? Lyrics.Synced)?.lines
             var following by remember(syncedLines) { mutableStateOf(true) }
-            FoundContent(state, following, onScrolledByHand = { following = false })
+            FoundContent(
+                state,
+                following,
+                onScrolledByHand = { following = false },
+                onTapLine = { timeMs -> if (onTapLine(timeMs)) following = true },
+                onNudge = onNudge,
+                onResetShift = onResetShift,
+            )
             Spacer(Modifier.height(12.dp))
             Box(modifier = Modifier.fillMaxWidth()) {
                 // "Try again" stays centred; the round button sits at the end of the same row
@@ -250,6 +280,9 @@ private fun ColumnScope.FoundContent(
     state: UiState.Found,
     following: Boolean,
     onScrolledByHand: () -> Unit,
+    onTapLine: (Long) -> Unit,
+    onNudge: (Long) -> Unit,
+    onResetShift: () -> Unit,
 ) {
     val match: RecognitionResult.Match = state.match
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
@@ -263,8 +296,9 @@ private fun ColumnScope.FoundContent(
         positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, now),
         state.lyrics.songDurationSeconds,
     )
-    val position = formatPosition(seconds)
-    val positionMs = (seconds * 1000).toLong()
+    // The manual shift applies to the shown time and to the lyrics alike.
+    val positionMs = syncedPositionMs((seconds * 1000).toLong(), state.shiftMs)
+    val position = formatPosition(positionMs / 1000.0)
     // No app name above the song: the lyrics get the space.
     Text(
         displayTitle(match.title),
@@ -292,8 +326,11 @@ private fun ColumnScope.FoundContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+    if (state.lyrics is Lyrics.Synced) {
+        ShiftRow(state.shiftMs, onNudge, onResetShift)
+    }
     Spacer(Modifier.height(8.dp))
-    LyricsArea(state.lyrics, positionMs, following, onScrolledByHand)
+    LyricsArea(state.lyrics, positionMs, following, onScrolledByHand, onTapLine)
 }
 
 @Composable
@@ -302,6 +339,7 @@ private fun ColumnScope.LyricsArea(
     positionMs: Long,
     following: Boolean,
     onScrolledByHand: () -> Unit,
+    onTapLine: (Long) -> Unit,
 ) {
     when (lyrics) {
         null -> CenteredInRemainingSpace { CircularProgressIndicator() }
@@ -309,7 +347,7 @@ private fun ColumnScope.LyricsArea(
         Lyrics.Instrumental -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_instrumental)) }
         Lyrics.Failure -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_error)) }
         is Lyrics.Plain -> PlainLyrics(lyrics.text)
-        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, following, onScrolledByHand)
+        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, following, onScrolledByHand, onTapLine)
     }
 }
 
@@ -329,6 +367,7 @@ private fun ColumnScope.SyncedLyrics(
     positionMs: Long,
     following: Boolean,
     onScrolledByHand: () -> Unit,
+    onTapLine: (Long) -> Unit,
 ) {
     val current = currentLineIndex(lines, positionMs)
     val listState = rememberLazyListState()
@@ -383,10 +422,33 @@ private fun ColumnScope.SyncedLyrics(
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { onTapLine(line.timeMs) }
                         .padding(vertical = 4.dp),
                 )
             }
         }
+    }
+}
+
+/** "−0.5 s", the current shift (tap to reset) and "+0.5 s"; positive moves the lyrics ahead. */
+@Composable
+private fun ShiftRow(shiftMs: Long, onNudge: (Long) -> Unit, onReset: () -> Unit) {
+    val later = stringResource(R.string.shift_later)
+    val earlier = stringResource(R.string.shift_earlier)
+    val reset = stringResource(R.string.shift_reset)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(
+            onClick = { onNudge(-SyncShift.STEP_MS) },
+            modifier = Modifier.semantics { contentDescription = later },
+        ) { Text(formatShift(-SyncShift.STEP_MS)) }
+        TextButton(
+            onClick = onReset,
+            modifier = Modifier.semantics { contentDescription = reset },
+        ) { Text(formatShift(shiftMs), fontWeight = FontWeight.Bold) }
+        TextButton(
+            onClick = { onNudge(SyncShift.STEP_MS) },
+            modifier = Modifier.semantics { contentDescription = earlier },
+        ) { Text(formatShift(SyncShift.STEP_MS)) }
     }
 }
 

@@ -26,7 +26,7 @@ singing, since one looks at the screen anyway).
 
 ## Status
 
-- [ ] 1. Tap to sync and fine offset - branch `feature/tap-to-sync`
+- [x] 1. Tap to sync and fine offset - branch `feature/tap-to-sync` 
 - [ ] 2. Countdown before singing starts again - branch `feature/countdown`
 - [ ] 3. The current line fills up - branch `feature/line-fill`
 - [ ] 4. Word timing where the lyrics have it - branch `feature/word-timing`
