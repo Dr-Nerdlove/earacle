@@ -7,9 +7,14 @@ import androidx.lifecycle.viewModelScope
 import io.github.drnerdlove.earacle.audio.MicrophoneException
 import io.github.drnerdlove.earacle.audio.MicrophoneRecorder
 import io.github.drnerdlove.earacle.lyrics.Lyrics
+import io.github.drnerdlove.earacle.lyrics.SyncShift
 import io.github.drnerdlove.earacle.lyrics.LrclibClient
 import io.github.drnerdlove.earacle.lyrics.LyricsProvider
+import io.github.drnerdlove.earacle.lyrics.isTapInRange
+import io.github.drnerdlove.earacle.lyrics.nudgedShift
+import io.github.drnerdlove.earacle.lyrics.shiftForTap
 import io.github.drnerdlove.earacle.lyrics.songDurationSeconds
+import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.recognition.FailureReason
 import io.github.drnerdlove.earacle.recognition.RecognitionResult
 import io.github.drnerdlove.earacle.recognition.ShazamRecognizer
@@ -39,6 +44,11 @@ sealed interface UiState {
         val lyrics: Lyrics? = null,
         /** True while the app is recording again to listen along. */
         val relistening: Boolean = false,
+        /**
+         * Manual timing correction in milliseconds, added to the position (see [SyncShift]). It belongs
+         * to the song: the same song keeps it, a new Found state starts at 0.
+         */
+        val shiftMs: Long = 0,
     ) : UiState
     data object NotFound : UiState
     data class Error(val kind: ErrorKind) : UiState
@@ -100,6 +110,40 @@ class MainViewModel(
                 _state.value = UiState.PermissionDenied
             }
         }
+    }
+
+    /**
+     * The user tapped the lyric line starting at [lineTimeMs]: it is being sung right now, so the shift
+     * is set to make it the current line. Returns false (and changes nothing) for a line too far away.
+     */
+    fun tapLine(lineTimeMs: Long): Boolean {
+        var accepted = false
+        _state.update { current ->
+            if (current !is UiState.Found) return@update current
+            val raw = rawPositionMs(current)
+            if (!isTapInRange(lineTimeMs, syncedPositionMs(raw, current.shiftMs))) return@update current
+            accepted = true
+            current.copy(shiftMs = shiftForTap(lineTimeMs, raw))
+        }
+        return accepted
+    }
+
+    /** Moves the lyrics by [deltaMs] (positive: ahead, the next line comes sooner). */
+    fun nudgeShift(deltaMs: Long) {
+        _state.update { if (it is UiState.Found) it.copy(shiftMs = nudgedShift(it.shiftMs, deltaMs)) else it }
+    }
+
+    fun resetShift() {
+        _state.update { if (it is UiState.Found) it.copy(shiftMs = 0) else it }
+    }
+
+    /** Position from the recognition result, capped at the song length, without the manual shift. */
+    private fun rawPositionMs(found: UiState.Found): Long {
+        val seconds = SongTracking.displayPosition(
+            positionSeconds(found.match.offsetSeconds, found.recordingStartedAtElapsedMs, SystemClock.elapsedRealtime()),
+            found.lyrics.songDurationSeconds,
+        )
+        return (seconds * 1000).toLong()
     }
 
     private fun errorKind(reason: FailureReason) = when (reason) {

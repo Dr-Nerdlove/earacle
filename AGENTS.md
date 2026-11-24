@@ -262,6 +262,10 @@ repository belongs to someone else, these points still apply unless "Project kno
     replaces the position (lyrics are kept); a different song loads new lyrics. After 4 answers in a
     row without a match it stops (display stays); a rate-limit answer waits 60 s. The song length from
     LRCLIB caps the shown position.
+  - Tap to sync (built, point 1, `lyrics/SyncShift.kt`): `UiState.Found.shiftMs` is added to the position
+    (positive = lyrics ahead, next line sooner), kept by the same-song `copy`, reset by any new `Found`. A tap
+    counts only within 30 s of the shown position; the shift is limited to ±30 s. Listening-along timing
+    (`SongTracking`) uses the unshifted position.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple

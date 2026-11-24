@@ -19,4 +19,7 @@
     <string name="lyrics_error">Der Text konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es nochmal.</string>
     <string name="lyrics_not_synced">Zu diesem Lied gibt es keinen zeitlich abgestimmten Text, deshalb siehst du hier den normalen Text.</string>
     <string name="lyrics_back_to_current">Zur aktuellen Zeile</string>
+    <string name="shift_later">Text 0,5 Sekunden später zeigen</string>
+    <string name="shift_earlier">Text 0,5 Sekunden früher zeigen</string>
+    <string name="shift_reset">Zeitkorrektur auf null zurücksetzen</string>
 </resources>
