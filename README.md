@@ -8,17 +8,19 @@ example a radio), recognizes the song and shows its lyrics line by line, in sync
 The interface is in German and English and follows the phone's language.
 
 <p align="center">
-  <img src="docs/screenshots/start.png" alt="Start screen with the &quot;Recognize song&quot; button" width="270">
+  <img src="docs/screenshots/start.png" alt="Start screen: search bar, the headline &quot;What's playing?&quot;, the cookie-shaped microphone button and the recently heard songs" width="220">
   &nbsp;
-  <img src="docs/screenshots/lyrics.png" alt="A recognized song with its lyrics; the current line is highlighted" width="270">
+  <img src="docs/screenshots/listening.png" alt="While listening: a wavy ring around the microphone fills in the 12 seconds" width="220">
+  &nbsp;
+  <img src="docs/screenshots/lyrics.png" alt="A recognized song with its lyrics; the current line is highlighted" width="220">
 </p>
 
-<p align="center"><sub>Start screen and a recognized song (German interface). The other lyric lines are blurred
+<p align="center"><sub>Start screen, listening and a recognized song (German interface). The other lyric lines are blurred
 here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 
 ## Status
 
-**Early stage (version 0.8.1).** Earacle recognizes a song from the microphone, shows its title, artist and
+**Early stage (version 0.9.0).** Earacle recognizes a song from the microphone, shows its title, artist and
 position, and shows the synced lyrics with the current line highlighted and filled word by word. It keeps
 listening along and follows song changes, but only while the app is open; the screen stays on meanwhile.
 Listening in the background (with the screen off) is not planned. All ten karaoke features of
@@ -28,7 +30,9 @@ the author's phone. The app is made for one phone and one person's use; expect r
 
 ## Features
 
-- Recognizes the song that is playing with one tap on "Recognize song": title, artist and position in the song
+- Recognizes the song that is playing with one tap on the big microphone button on the start screen: title, artist
+  and position in the song. While it records, a wavy ring around the microphone fills in the 12 seconds; while the
+  recognition service answers, a shape-morphing loading animation turns
 - Shows synced lyrics from LRCLIB with the current line highlighted and centred; scroll freely to read ahead,
   and the sync button jumps back to the current line
 - Tap the lyric line that is being sung to fix the timing; `−0.5 s` / `+0.5 s` fine-tune it, tapping the shown
@@ -48,8 +52,9 @@ the author's phone. The app is made for one phone and one person's use; expect r
 - "Search song": when Shazam does not know a song (or is down), search LRCLIB by title and/or artist and pick an
   entry. Tap the line being sung to start the clock there; from then on everything works as for a recognized
   song, except that the app does not listen along
-- Song history: every recognized song and every song picked by hand is listed on a page of its own ("History"
-  button on the start screen, clock button next to "Try again"), newest first, grouped by day, with the time.
+- Song history: every recognized song and every song picked by hand is listed on a page of its own (clock icon in the
+  search bar of the start screen, which also shows the last three songs under "Recently heard"; clock button next
+  to "Try again"), newest first, grouped by day, with the time.
   Tap an entry to open its lyrics again (exactly the version that was shown, then tap the line being sung);
   swipe an entry to the side to delete it (with "Undo"), or clear everything. The search screen shows the last 5
   songs while its field is empty. The history stays on the phone, without a limit, and is included in Android's

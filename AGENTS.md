@@ -235,7 +235,7 @@ repository belongs to someone else, these points still apply unless "Project kno
   program. The owner alone decides about merging and releases.
 - **Product languages:** German and English. Every user-facing text exists in both (`values/strings.xml`
   for English as the default, `values-de/strings.xml` for German), in the same change.
-- **Architecture (decided and built; v0.8.1):**
+- **Architecture (decided and built; v0.9.0):**
   - Kotlin + Jetpack Compose; microphone capture with `AudioRecord` (PCM 16-bit mono) while the app is
     visible (no foreground service; see "Rejected options").
   - Song recognition through the **unofficial (reverse-engineered) Shazam API**, as used by open-source
