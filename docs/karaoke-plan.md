@@ -36,6 +36,7 @@ singing, since one looks at the screen anyway).
 - [x] 8. Song history page - branch `feature/song-history`
 - [x] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
   2026-11-25; done first, before 7 and 8; the owner chose SnakeYAML Engine as the YAML reader)
+- [ ] 10. A stronger fill colour - branch `feature/stronger-fill-colour` (only after point 8)
 
 ## Ground rules for all points
 
@@ -518,6 +519,54 @@ is ignored; (c) numbers and booleans as `text` are read as written (`text: 1984`
 word-synced version of the same kind (synced or plain) within 3 s of the length it chose, and only when that entry
 really carries a lyricsfile (the flag alone is not enough). No change to the screen was needed: the fill and the
 countdown already read `words` and `endTimeMs`.
+
+## 10. A stronger fill colour
+
+**Why:** the owner noticed on the phone (v0.7.0, Material You colours) that the filled part of the current
+line hardly stands out from the grey of the words and lines not sung yet. The cause is general, not only
+this palette: the fill uses `colorScheme.primary` and the rest `colorScheme.onSurfaceVariant`, and in Material
+You both have about the same lightness (in the dark scheme both are tone 80, in the light one both are dark).
+They differ only in hue, and with a muted palette (low chroma) the fill looks almost grey. Decided with the
+owner on 2026-11-25: make the **fill** stronger and leave the not-yet-sung text as it is, because it must
+stay easy to read ahead while singing. (Dimming the rest instead was offered and rejected for this reason; a
+fixed karaoke colour independent of Material You was not chosen.)
+
+**What the owner sees:** the filled words of the current line, and everything else drawn in the fill
+colour (the countdown dots), stand out clearly from the grey text with any wallpaper, in the light and the
+dark scheme and in stage mode. With a palette where the fill is already strong, nothing changes visibly.
+The not-yet-sung text and the other lines keep their colour and stay as readable as now.
+
+**Logic (pure, tested):** a function `fillColour(primary, muted, background): Int` on ARGB values (no
+`android.*`, no Compose), in `lyrics/` or a new `ui`-free file:
+
+- It keeps `primary` when it already differs enough from `muted`: measured as a colour difference in CIELAB
+  (ΔE, CIE76 is enough) of at least `MIN_FILL_DIFFERENCE` (first guess 35, tuned on the phone).
+- Otherwise it derives a stronger colour from `primary` with the same hue: more saturated, and lightness moved
+  away from `muted` (lighter on a dark background, darker on a light one), in small steps until the
+  difference is reached.
+- It must stay readable on `background`: a WCAG contrast ratio of at least 4.5:1, else the step is not
+  taken (the best candidate that keeps 4.5:1 wins).
+- A grey `primary` (no hue at all) cannot be made more colourful; then the lightness change alone has to do
+  it.
+
+Compose computes it once per colour scheme (`remember(colorScheme)`) and uses it wherever
+`colorScheme.primary` is the fill or highlight colour of lyrics: `FillingLine`, the current line in the list,
+the countdown dots (`lit`), and the same places in `StageContent` (black background, its own muted grey). Do
+not change the muted colour.
+
+**Preview before the phone:** the cloud session cannot build the app, but the pure function runs on the JVM.
+Show the owner a small preview page (HTML swatches: a line half filled, before and after) for a few palettes:
+a muted one (low chroma), a strong one, light and dark, and stage mode. If the owner can send a screenshot of
+the lyrics screen with their own colours, take the colours from it as one more test case.
+
+**Tests:** a strong primary stays unchanged; a muted palette in the dark and the light scheme gets a colour
+with at least `MIN_FILL_DIFFERENCE` from `muted` and at least 4.5:1 on `background`; the hue stays (within a
+few degrees); a grey primary; black background (stage mode). Sabotage: e.g. return `primary` always, or move
+the lightness towards `muted` instead of away.
+
+**On the phone:** with the owner's current wallpaper (the case that showed the problem), light and dark
+scheme, stage mode; a song with word times and one without; the not-yet-sung text must look exactly as
+before.
 
 ## After the points
 
