@@ -22,4 +22,8 @@
     <string name="shift_later">Text 0,5 Sekunden später zeigen</string>
     <string name="shift_earlier">Text 0,5 Sekunden früher zeigen</string>
     <string name="shift_reset">Zeitkorrektur auf null zurücksetzen</string>
+    <string name="stage_enter">Bühnenmodus: sehr großer Text zum Mitsingen aus der Entfernung</string>
+    <string name="stage_exit">Bühnenmodus verlassen</string>
+    <string name="stage_text_smaller">Schrift kleiner machen</string>
+    <string name="stage_text_larger">Schrift größer machen</string>
 </resources>

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import io.github.drnerdlove.earacle.audio.MicrophoneException
 import io.github.drnerdlove.earacle.audio.MicrophoneRecorder
 import io.github.drnerdlove.earacle.lyrics.Lyrics
+import io.github.drnerdlove.earacle.lyrics.StageSettings
+import io.github.drnerdlove.earacle.lyrics.StageStore
 import io.github.drnerdlove.earacle.lyrics.SyncShift
 import io.github.drnerdlove.earacle.lyrics.LrclibClient
 import io.github.drnerdlove.earacle.lyrics.LyricsProvider
@@ -66,6 +68,30 @@ class MainViewModel(
 
     /** The microphone is silenced in the background (Android 11+), so listening along waits for the app to show. */
     private val appVisible = MutableStateFlow(false)
+
+    private var stageStore: StageStore? = null
+    private val _stage = MutableStateFlow(StageSettings())
+
+    /** Stage mode on/off and its text size. Lives here so a rotation keeps it; [StageStore] keeps it across runs. */
+    val stage: StateFlow<StageSettings> = _stage.asStateFlow()
+
+    /** Loads the saved stage mode settings once; later calls (after a rotation) change nothing. */
+    fun attachStageStore(store: StageStore) {
+        if (stageStore != null) return
+        stageStore = store
+        _stage.value = store.load()
+    }
+
+    fun setStageMode(enabled: Boolean) = updateStage { it.withEnabled(enabled) }
+
+    /** One step larger ([up] = true) or smaller; stops at the limits. */
+    fun changeStageTextSize(up: Boolean) = updateStage { it.withTextStep(up) }
+
+    private fun updateStage(change: (StageSettings) -> StageSettings) {
+        val updated = change(_stage.value)
+        _stage.value = updated
+        stageStore?.save(updated)
+    }
 
     val isBusy: Boolean
         get() = _state.value is UiState.Listening || _state.value is UiState.Recognizing
