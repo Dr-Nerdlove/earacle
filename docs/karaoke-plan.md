@@ -31,7 +31,7 @@ singing, since one looks at the screen anyway).
 - [x] 3. The current line fills up - branch `feature/line-fill`, PR #30
 - [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
 - [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
-- [x] 6. Stage mode - branch `feature/stage-mode`, PR #TBD
+- [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
 
 ## Ground rules for all points
 
