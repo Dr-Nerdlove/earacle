@@ -19,9 +19,13 @@ here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 ## Status
 
 **Early stage (version 0.8.1).** Earacle recognizes a song from the microphone, shows its title, artist and
-position, and shows the synced lyrics with the current line highlighted. It keeps listening along and follows
-song changes, but only while the app is open; the screen stays on meanwhile. Listening in the background (with
-the screen off) is not planned.
+position, and shows the synced lyrics with the current line highlighted and filled word by word. It keeps
+listening along and follows song changes, but only while the app is open; the screen stays on meanwhile.
+Listening in the background (with the screen off) is not planned. All ten karaoke features of
+[`docs/karaoke-plan.md`](docs/karaoke-plan.md) are built (tap to sync, countdown, line fill, word timing,
+backing vocals, stage mode, search by hand, history, lyricsfile word times, stronger fill colour) and work on
+the author's phone. The fix for entries restored with "Undo" in the history (0.8.1) has not been confirmed on
+a phone yet. The app is made for one phone and one person's use; expect rough edges.
 
 ## Features
 
@@ -113,8 +117,8 @@ the APK.
   (`.github/workflows/build.yml`), builds releases (`.github/workflows/release.yml`) and scans every push and
   pull request for leaked secrets with gitleaks (`.github/workflows/gitleaks.yml`).
 - Unit tests (JUnit 4) in `app/src/test` cover the fingerprint, the Shazam request and answer handling, the
-  position maths, the listening-along timing (`SongTracking`), LRC parsing, the LRCLIB version choice and the
-  displayed title. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request.
+  position maths, the listening-along timing (`SongTracking`), LRC parsing and the lyricsfile, the LRCLIB version choice, the displayed
+  title, the manual search, the song history, stage mode and the fill colour. Run them with `./gradlew testDebugUnitTest`; CI runs them on every pull request.
   Microphone, real recognition and the screen can only be checked on a real phone.
 
 ## Credits
