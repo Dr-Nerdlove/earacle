@@ -321,7 +321,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     stage mode, else returns from any other screen to the start screen (stops a running recognition and listening
     along; a lyrics lookup still running cannot bring the song back but still adds it to the history); on the start
     screen back closes the app. The decision is the pure `backAction`, unit-tested.
-  - Design (decided 2026-11-25; step 1 built in PR `feature/expressive-start-screen`, not yet tried on the phone): `docs/design-plan.md` plans the move to Material 3 Expressive
+  - Design (decided 2026-11-25; step 1 built, PR #52, works on the owner's phone 2026-11-25): `docs/design-plan.md` plans the move to Material 3 Expressive
     (proposal B of three): start screen with a cookie-shaped recognize button, a wavy ring around the microphone
     while recording (standard Material 3 Expressive wave, not the loudness: owner's decision 2026-11-25 after trying it on the phone; the loudness code was removed), the morphing loading indicator while Shazam answers; then the
     lyrics screen and search/history. One screen per pull request.
