@@ -335,6 +335,17 @@ class MainViewModel(
     }
 
     /**
+     * Back to the start screen: stops a running recognition and listening along. A lyrics lookup that is still
+     * running cannot bring the old song back (it only fills a [UiState.Found] that is on screen) but still adds
+     * the song to the history.
+     */
+    fun goHome() {
+        job?.cancel()
+        trackingJob?.cancel()
+        _state.value = UiState.Idle
+    }
+
+    /**
      * The user tapped the lyric line starting at [lineTimeMs]: it is being sung right now. In a recognized song
      * the shift is set to make it the current line (false and no change for a line too far away); in a song
      * picked by hand the clock starts at that line. See [tapResult].
