@@ -15,6 +15,10 @@ data class LrclibTrack(
     val instrumental: Boolean,
     val plainLyrics: String?,
     val syncedLyrics: String?,
+    /** Raw Lyricsfile YAML (line ends and word times) when LRCLIB has it. */
+    val lyricsfile: String? = null,
+    /** LRCLIB's flag that the lyricsfile has word times. */
+    val hasWordSync: Boolean = false,
 )
 
 /** Pure helpers for the LRCLIB API (no network access here). */
@@ -44,6 +48,8 @@ object LrclibApi {
                 instrumental = o.optBoolean("instrumental", false),
                 plainLyrics = textOrNull(o, "plainLyrics"),
                 syncedLyrics = textOrNull(o, "syncedLyrics"),
+                lyricsfile = textOrNull(o, "lyricsfile"),
+                hasWordSync = o.optBoolean("hasWordSync", false),
             )
         }
     } catch (e: JSONException) {
@@ -79,17 +85,39 @@ object LrclibApi {
         val usable = sameSong.filter { it.syncedLyrics != null }
             .ifEmpty { sameSong.filter { it.plainLyrics != null } }
             .ifEmpty { return sameSong.firstOrNull { it.instrumental } }
-        if (durationSeconds != null) {
-            return usable.minByOrNull { abs(it.durationSeconds - durationSeconds) }
-        }
-        return usable.maxByOrNull { candidate ->
-            usable.count { abs(it.durationSeconds - candidate.durationSeconds) <= DURATION_TOLERANCE }
-        } // maxBy returns the first maximum, so LRCLIB's own order breaks ties.
+        val chosen = if (durationSeconds != null) {
+            usable.minByOrNull { abs(it.durationSeconds - durationSeconds) }
+        } else {
+            usable.maxByOrNull { candidate ->
+                usable.count { abs(it.durationSeconds - candidate.durationSeconds) <= DURATION_TOLERANCE }
+            } // maxBy returns the first maximum, so LRCLIB's own order breaks ties.
+        } ?: return null
+        return preferWordSync(chosen, usable)
     }
 
-    /** Turns a picked entry into what the app shows. Synced lyrics that do not parse fall back to plain. */
+    /**
+     * Among the versions of the same length as [chosen] (within [DURATION_TOLERANCE]) and of the same kind (synced
+     * or plain), the first with word times, if [chosen] has none. Never changes the song, the variant or the length.
+     */
+    private fun preferWordSync(chosen: LrclibTrack, usable: List<LrclibTrack>): LrclibTrack {
+        if (chosen.hasWordSync && chosen.lyricsfile != null) return chosen
+        return usable.firstOrNull {
+            it.hasWordSync && it.lyricsfile != null &&
+                (it.syncedLyrics != null) == (chosen.syncedLyrics != null) &&
+                abs(it.durationSeconds - chosen.durationSeconds) <= DURATION_TOLERANCE
+        } ?: chosen
+    }
+
+    /**
+     * Turns a picked entry into what the app shows: the lyricsfile (real line ends, word times) when it parses,
+     * else the synced lyrics, else plain. Anything that does not parse falls back to the next.
+     */
     fun toLyrics(track: LrclibTrack): Lyrics {
         val duration = track.durationSeconds.takeIf { it > 0 }
+        track.lyricsfile?.let { yaml ->
+            val lines = Lyricsfile.parse(yaml)
+            if (lines != null) return Lyrics.Synced(lines, duration)
+        }
         track.syncedLyrics?.let { text ->
             val lines = Lrc.parse(text)
             if (lines.isNotEmpty()) return Lyrics.Synced(lines, duration)

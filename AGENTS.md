@@ -375,6 +375,12 @@ repository belongs to someone else, these points still apply unless "Project kno
     entries agree on (or the closest to a known duration). Wrong lyrics are worse than none. Artists are compared as lists of names (split at `,` `&` `·` `/` `;` `+` and feat./with/and/et...): a
     match is the first artist of one side being among the names of the other, or equal names joined (LRCLIB spells
     multi-artist credits in many ways).
+  - Lyricsfile (built, point 9, `lyrics/Lyricsfile.kt`): `LrclibApi.toLyrics` uses the `lyricsfile` first (line
+    start and end, word times, read with the library SnakeYAML Engine, Apache 2.0, chosen by the owner on
+    2026-11-25), then `syncedLyrics`, then plain lyrics; invalid YAML falls back silently. Words are kept only
+    when they join to the line's text (trailing blanks aside). `pickBest` prefers a version with `hasWordSync`
+    and a lyricsfile only among versions of the same kind within 3 s of the chosen length. Checked by tests
+    only, not yet on a phone, and not yet against a real answer's YAML (the structure comes from LRCLIB's docs).
   - LRCLIB answers carry more than `syncedLyrics`: `lyricsfile` (YAML with line start/end and word times,
     format may still change) and `hasWordSync`. A check of `syncedLyrics` alone (2026-11-24) wrongly found no
     word timing; look at every field of a real answer before concluding.

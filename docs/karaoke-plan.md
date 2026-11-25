@@ -34,8 +34,8 @@ singing, since one looks at the screen anyway).
 - [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
 - [ ] 7. Search a song by hand - branch `feature/manual-search`
 - [ ] 8. Recently heard songs - branch `feature/song-history`
-- [ ] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
-  2026-11-25; done first, before 7 and 8)
+- [x] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
+  2026-11-25; done first, before 7 and 8; the owner chose SnakeYAML Engine as the YAML reader)
 
 ## Ground rules for all points
 
@@ -457,6 +457,14 @@ another length). Sabotage: e.g. off-by-one in `charIndex`, or prefer `syncedLyri
 **On the phone:** a song with many word-synced versions (e.g. "Blinding Lights" by The Weeknd): the fill
 must follow the words; a song without word timing still fills as before; the countdown after a line now
 starts when the line really ends.
+
+**Built (2026-11-25):** `Lyricsfile.parse` as planned, with SnakeYAML Engine 3.2. Decisions on details the plan left
+open: (a) the text of a line is trimmed; words are kept only when they join to the untrimmed text (trailing blanks
+ignored) and have times that never go back, otherwise the line keeps no word times; (b) an `end_ms` before `start_ms`
+is ignored; (c) numbers and booleans as `text` are read as written (`text: 1984`); (d) `pickBest` only swaps to a
+word-synced version of the same kind (synced or plain) within 3 s of the length it chose, and only when that entry
+really carries a lyricsfile (the flag alone is not enough). No change to the screen was needed: the fill and the
+countdown already read `words` and `endTimeMs`.
 
 ## After the points
 
