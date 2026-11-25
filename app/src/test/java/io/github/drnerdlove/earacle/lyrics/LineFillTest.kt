@@ -78,4 +78,49 @@ class LineFillTest {
         assertEquals(text.length, filledTextIndex(text, 1f))
         assertEquals(0, filledTextIndex(text, 0f))
     }
+
+    // "Hello world again": words start at 0, 6 and 12.
+    private val tagged = listOf(
+        LyricLine(
+            10_000, "Hello world again",
+            words = listOf(WordTime(0, 10_000), WordTime(6, 11_000), WordTime(12, 12_500)),
+        ),
+        LyricLine(60_000, "b"),
+    )
+
+    @Test
+    fun taggedLineFillsWordByWordOnTheRealTimes() {
+        assertEquals(0, filledEndIndex(tagged, 0, 9_999))
+        assertEquals(6, filledEndIndex(tagged, 0, 10_000))
+        assertEquals(6, filledEndIndex(tagged, 0, 10_999))
+        assertEquals(12, filledEndIndex(tagged, 0, 11_000))
+        assertEquals(17, filledEndIndex(tagged, 0, 12_500))
+        assertEquals(17, filledEndIndex(tagged, 0, 50_000))
+    }
+
+    @Test
+    fun taggedLineIgnoresTheEstimatedPace() {
+        // The even pace would be done after 17 x 90 = 1530 ms; the word times say the line is not.
+        assertEquals(12, filledEndIndex(tagged, 0, 12_000))
+    }
+
+    @Test
+    fun textBeforeTheFirstWordTimeFillsWithTheLine() {
+        val line = listOf(LyricLine(10_000, "Oh hello", words = listOf(WordTime(3, 10_800))))
+        assertEquals(3, filledEndIndex(line, 0, 10_100))
+        assertEquals(8, filledEndIndex(line, 0, 10_800))
+    }
+
+    @Test
+    fun lineWithoutWordTimesFillsAtEvenPace() {
+        assertEquals(10, filledEndIndex(lines, 0, 10_900))
+        assertEquals(0, filledEndIndex(lines, 0, 10_000))
+    }
+
+    @Test
+    fun closingTagEndsTheEstimateOfTheLine() {
+        val line = listOf(LyricLine(10_000, "Hi", endTimeMs = 14_000), LyricLine(60_000, "b"))
+        assertEquals(14_000L, estimatedLineEndMs(line, 0))
+        assertEquals(0.5f, lineProgress(line, 0, 12_000), 0.001f)
+    }
 }

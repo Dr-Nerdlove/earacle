@@ -88,8 +88,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.ResolvedTextDirection
-import io.github.drnerdlove.earacle.lyrics.filledTextIndex
-import io.github.drnerdlove.earacle.lyrics.lineProgress
+import io.github.drnerdlove.earacle.lyrics.filledEndIndex
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -516,8 +515,7 @@ private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -
                 val textLayout = layout ?: return@drawWithContent
                 // The layout can still belong to the previous text for one frame.
                 if (textLayout.layoutInput.text.text != text) return@drawWithContent
-                val progress = lineProgress(latestLines, index, latestPositionAt(frameTime))
-                val filledEnd = filledTextIndex(text, progress)
+                val filledEnd = filledEndIndex(latestLines, index, latestPositionAt(frameTime))
                 for (line in 0 until textLayout.lineCount) {
                     val lineEnd = textLayout.getLineEnd(line, visibleEnd = true)
                     if (filledEnd >= lineEnd) continue
