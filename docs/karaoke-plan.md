@@ -9,8 +9,8 @@ on earlier ones.
 **How to use this plan in a new session:** the owner writes "Setze Punkt N aus docs/karaoke-plan.md um."
 The session then:
 
-1. Checks that every earlier point is marked done below and merged into `main`. If not, it says so and asks
-   before going on.
+1. Checks that every earlier point is marked done below and merged into `main` (points 7 to 9 have their
+   own order, see "Second round"). If not, it says so and asks before going on.
 2. Creates the branch named for the point from the latest `main`.
 3. Builds the point as described, with the tests and sabotage checks AGENTS.md asks for.
 4. In the same pull request: updates the README ("Features", "Planned" where it applies), the relevant part
@@ -32,6 +32,10 @@ singing, since one looks at the screen anyway).
 - [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
 - [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
 - [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
+- [ ] 7. Search a song by hand - branch `feature/manual-search`
+- [ ] 8. Recently heard songs - branch `feature/song-history`
+- [ ] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
+  2026-11-25; done first, before 7 and 8)
 
 ## Ground rules for all points
 
@@ -58,8 +62,12 @@ singing, since one looks at the screen anyway).
 Checked on 2026-11-24 against the real LRCLIB API (`/api/search` for ten popular songs in several languages,
 200 entries, 159 with synced lyrics, 9,023 lines):
 
-- **Word timing:** none. Not one entry had per-word timestamps (`<mm:ss.xx>`, the "A2" or enhanced LRC
-  format) or timestamps in the middle of a line. Point 4 is therefore small and will rarely show.
+- **Word timing:** none in the `syncedLyrics` field: not one entry had per-word timestamps (`<mm:ss.xx>`,
+  the "A2" or enhanced LRC format) or timestamps in the middle of a line. Point 4 is therefore small and
+  will rarely show. **Correction (2026-11-25):** this check only looked at `syncedLyrics` and missed that
+  LRCLIB answers also carry a `lyricsfile` field (YAML with line end times and word times) and a
+  `hasWordSync` flag. In the same sample, 52 of the 159 synced entries (33 %) have word timing there, and all
+  159 have line end times. Point 9 uses them.
 - **Backing vocals in parentheses:** 1,102 lines (12 %), e.g. `Looking out for a place to go (hmm)`,
   `(See you groove)`, `Dancing (Dancing)`. Point 5 matters.
 - **Empty lines** (instrumental parts, shown as ♪ today): 332, about two per song.
@@ -282,7 +290,175 @@ differently; a line too long for the screen at the chosen size scrolls inside th
 dots grow with the text (a third of the size). (g) Tapping a line does not set the timing in stage mode (there
 is no list); use the `±0.5 s` buttons. Four new texts, in English and German.
 
+## Second round (planned 2026-11-25)
+
+Planned after points 1 to 6 were released as v0.6.0. Point 8 builds on point 7 and comes after it. Point 9
+does not depend on 7 and 8; the owner agreed to it on 2026-11-25 and chose to do it first, before 7 and 8. The ground rules above apply to all three.
+
+At the same time, the owner dropped two older ideas (see "Rejected options" in AGENTS.md): listening in the
+background with the screen off, and own recognition with Olaf against the music files on the phone.
+
+## 7. Search a song by hand
+
+**Why:** when Shazam does not recognize a song, or the unofficial Shazam API stops working, the app is
+useless today. With a search by hand and tap to sync (point 1), one can still sing along. This is the
+fallback for Shazam instead of Olaf.
+
+**What the owner sees:**
+
+- A second, less prominent button **"Song suchen" / "Search song"** under the main button on the start screen,
+  and also on the "not recognized" and error screens (that is where it matters most). On the lyrics screen it
+  appears when no synced lyrics were found (plain lyrics or "no lyrics found"), with the recognized title
+  and artist already filled in, so a better version can be picked.
+- A search screen with one text field (title and/or artist, as one types it) and a search button. LRCLIB's
+  free search (`/api/search?q=`, all words must appear in title, artist or album) answers with up to 20
+  entries. Each result shows title, artist, album, length (m:ss) and whether it has synced lyrics, plain
+  lyrics only, or is instrumental. Entries with synced lyrics come first, otherwise LRCLIB's order. Entries
+  without any lyrics and not instrumental are left out. Clear messages for "nothing found" and "no
+  connection".
+- The system back gesture/button leaves the search and returns to the screen before it (`BackHandler`, no
+  new navigation library).
+- Picking a result opens the lyrics screen with these lyrics, without a second lookup. Since the app does not
+  know where in the song the music is, the clock does not run yet: nothing is highlighted, and a hint says
+  **"Tippe auf die Zeile, die gerade gesungen wird." / "Tap the line that is being sung right now."** The
+  first tap starts the clock at that line; from then on everything works as for a recognized song (fill,
+  countdown, backing vocals, stage mode, the ±0.5 s buttons).
+- For a song picked by hand, every tap on a line sets the clock to that line (no 30 s limit and no ±30 s
+  shift limit as in point 1: without recognition there is nothing else to correct the timing). The ±0.5 s
+  buttons work as usual.
+- Listening along does not run for a song picked by hand (Shazam may be down, and the search needs no
+  microphone). "Try again" recognizes as usual and replaces the song when Shazam finds one.
+
+**Logic (pure, tested):**
+
+- `LrclibApi.buildQueryUrl(query)` (trimmed, URL-encoded; empty query: no request) and the parsing of the
+  extra fields the results need: `id` and `albumName` go into `LrclibTrack`.
+- `searchResultsForPicker(tracks)`: filtering and order as above.
+- Anchoring: `UiState.Found` gets a field for where the song came from (recognized / picked by hand) and
+  whether the clock is running yet. A pure helper decides what a tap does: in a recognized song as in point 1
+  (`shiftForTap`, range check); in a picked song, it anchors the clock at the tapped line (offset = line time,
+  start = now, shift = 0). The position while waiting is the start of the song and nothing counts as current.
+- `LrclibClient` gets `search(query): List<LrclibTrack>?` (null on failure), reusing its `get`.
+
+**Where:** a new `UiState` for the search (query, results, loading, error, and the state to return to),
+`MainViewModel.openSearch(prefill)`, `search(query)`, `pick(track)`, `closeSearch()`; the search screen as
+its own composable in `MainActivity.kt` or a new file next to it. Lyrics of the picked entry via
+`LrclibApi.toLyrics`.
+
+**Tests:** URL building (umlauts, spaces, empty), result filtering and order, parsing of `id` and
+`albumName` (also missing), the tap rules for both kinds of song, that the waiting state highlights
+nothing, and that a picked song starts no listening along (as far as testable without Android; otherwise a
+pure helper that decides it). Sabotage: e.g. apply the 30 s limit to picked songs, or sort plain before
+synced.
+
+**On the phone:** search a song that is playing, pick it, tap the line being sung, check that the next lines
+change on time; search while in airplane mode (clear message); back gesture from the search; search from
+the "not recognized" screen; "Try again" after a picked song.
+
+## 8. Recently heard songs
+
+**Why:** to call up a song again quickly (e.g. the same radio hit an hour later, or to sing it again), without
+listening or typing.
+
+**What the owner sees:**
+
+- In the search screen of point 7, while the search field is empty: a list "Zuletzt gehört" / "Recently
+  heard" with the last 20 songs, newest first, recognized ones and those picked by hand, each with title,
+  artist and when (e.g. "heute 14:32" / "today 2:32 PM", or the date). A song that is already in the list is
+  not added twice; it moves to the top.
+- Tapping an entry opens it like a song picked by hand (point 7: the clock starts at the first tap).
+- A button "Verlauf löschen" / "Clear history" with a short confirmation.
+
+**Data and privacy:** the list is kept on the phone only (SharedPreferences, as JSON with org.json, which
+Android already has; no new library), never sent anywhere and not logged. Stored per entry: title, artist,
+the time, and the LRCLIB `id` of the lyrics that were shown, if any. Opening an entry with an id loads
+exactly that version via `/api/get/{id}` (checked 2026-11-25: answers 200 with the same fields as a search
+result); without an id, the normal lookup by title and artist runs. The stored JSON has a format version, so
+a later change can carry the list over; broken or unknown data gives an empty list, never a crash.
+
+**Logic (pure, tested):** `SongHistory` with `add(entry, now)` (dedupe by normalized title and artist, move
+to top, keep 20), `clear()`, JSON to and from text; a `HistoryStore` interface like `StageStore`, with the
+SharedPreferences version next to `StagePreferences.kt`. When a song counts as "heard": once its lyrics have
+been looked up (recognized) or when it is picked (by hand).
+
+**Tests:** adding, moving to the top, the limit, dedupe with different spelling ("Atemlos" / "atemlos"),
+clear, JSON round trip, broken JSON and an unknown format version give an empty list, the `/api/get/{id}`
+URL. Sabotage: e.g. no limit, or no dedupe.
+
+**On the phone:** recognize two songs and pick one by hand, check the list and its order; open an entry;
+close and reopen the app (the list stays); clear it; install the update over the old version (the app
+starts with an empty list, nothing breaks).
+
+## 9. Real word and line times from LRCLIB's lyricsfile
+
+**Why:** LRCLIB answers carry a `lyricsfile` field: YAML with the start and end time of every line and, for
+about a third of the synced entries (see the correction under "What the real lyrics look like"), the start
+of every word. With it, the fill (point 3) follows the singer word by word instead of an estimate, and line
+ends are real, which makes the fill and the countdown (point 2) exact. Song by song in the sample: e.g. 13
+of 17 synced versions of "Blinding Lights" and 8 of 18 of "Dancing Queen" have word timing; 2 of 10 songs had
+none.
+
+**Facts checked at the source (2026-11-25):** the fields are documented in LRCLIB's own project (search and
+get return `hasWordSync`, a boolean, and `lyricsfile`, "raw Lyricsfile YAML when present"; LRCLIB's design
+says that when a lyricsfile is present, the older lyric fields should be ignored). LRCGET's release notes
+warn that the format may still change. A real answer looks like this (structure only):
+
+```yaml
+version: '1.0'
+metadata:
+  title: ...
+  artist: ...
+  duration_ms: 372000
+  instrumental: false
+lines:
+- text: First line of the song
+  start_ms: 13770
+  end_ms: 15330
+  words:
+  - text: 'First '
+    start_ms: 13770
+  - text: 'line '
+    start_ms: 13890
+  ...
+```
+
+Not every line has `end_ms` or `words` (LRCLIB's own examples have lines with `start_ms` only).
+
+**What the owner sees:** for songs with word timing, the current line fills word by word on the real times;
+for all songs from the lyricsfile, the fill and the countdown use the real line ends. Songs without a
+lyricsfile behave as today.
+
+**Logic (pure, tested):**
+
+- `LrclibTrack` gets `lyricsfile` and `hasWordSync`.
+- `Lyricsfile.parse(yaml): List<LyricLine>?`: each line becomes a `LyricLine` with `timeMs = start_ms`,
+  `endTimeMs = end_ms` (if given), and `words` from the word list, where each word's `charIndex` is the
+  length of the words before it. If the words do not join to exactly the line's text, the words are dropped
+  and the line is kept. Lines without `start_ms` are skipped; the result is sorted. Anything that does not
+  parse gives null.
+- `LrclibApi.toLyrics` uses the lyricsfile when it parses into at least one line, otherwise `syncedLyrics` as
+  today, then plain lyrics. Never a crash on odd data.
+- `pickBest` (optional, careful): among the versions it would already accept and that have the length it
+  chose, prefer one with `hasWordSync`. It must never change which song, artist, variant or length is chosen
+  ("wrong lyrics are worse than none").
+
+**YAML:** the app has no YAML reader. Recommended: the small, pure-Java library **SnakeYAML Engine**
+(`org.snakeyaml:snakeyaml-engine`), because real YAML has quoting and escapes (`'Qui '`, `"..."`) that a
+hand-made reader gets wrong. The alternative, a small own reader for just this structure, needs no library
+but would break on such cases. The session asks the owner before adding the library (AGENTS.md: new
+libraries only with a reason), checks the version's licence (Apache 2.0) and that it works on Android, and
+adds it to `gradle/libs.versions.toml`.
+
+**Tests:** a made-up lyricsfile (no real lyrics in the repository: they are copyrighted) with words, one
+without words, a line without `end_ms`, words that do not join to the line text, quoting with spaces and
+umlauts, invalid YAML (falls back to `syncedLyrics`), the `pickBest` tie-break (and that it never picks
+another length). Sabotage: e.g. off-by-one in `charIndex`, or prefer `syncedLyrics` over the lyricsfile.
+
+**On the phone:** a song with many word-synced versions (e.g. "Blinding Lights" by The Weeknd): the fill
+must follow the words; a song without word timing still fills as before; the countdown after a line now
+starts when the line really ends.
+
 ## After the points
 
-A release (e.g. after points 1-3 as `v0.5.0`, after all six as `v0.6.0`) is the owner's decision; the steps
-are in AGENTS.md ("Release").
+Releases (points 1-3 were `v0.5.0`, points 4-6 `v0.6.0`) are the owner's decision; the steps are in
+AGENTS.md ("Release").
