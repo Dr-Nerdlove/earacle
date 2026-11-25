@@ -246,9 +246,8 @@ private fun RecognizeElement(state: UiState, onRecognize: () -> Unit) {
         when (state) {
             is UiState.Listening -> {
                 val reduced = rememberReducedMotion()
-                // The ring reads these States while it draws, so a new level does not recompose the screen.
+                // The ring reads this State while it draws, so a new progress does not recompose the screen.
                 val progress = rememberUpdatedState(state.progress)
-                val level = rememberUpdatedState(state.level)
                 val stroke = with(LocalDensity.current) { Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round) }
                 CircularWavyProgressIndicator(
                     progress = { progress.value },
@@ -256,7 +255,7 @@ private fun RecognizeElement(state: UiState, onRecognize: () -> Unit) {
                     trackColor = colors.primary.copy(alpha = 0.24f),
                     stroke = stroke,
                     trackStroke = stroke,
-                    amplitude = { if (reduced) 0f else level.value },
+                    amplitude = if (reduced) { { 0f } } else WavyProgressIndicatorDefaults.indicatorAmplitude,
                     waveSpeed = if (reduced) 0.dp else WavyProgressIndicatorDefaults.CircularWavelength,
                     modifier = Modifier.size(ElementSize),
                 )
@@ -377,7 +376,7 @@ fun StartIdlePreview() {
 @Composable
 fun StartListeningPreview() {
     EaracleTheme {
-        StartContent(UiState.Listening(0.4f, 0.6f), previewEntries(), {}, {}, {}, {})
+        StartContent(UiState.Listening(0.4f), previewEntries(), {}, {}, {}, {})
     }
 }
 

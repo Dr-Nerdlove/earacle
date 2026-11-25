@@ -64,24 +64,18 @@ has while listening, about 1.8 times a normal 24 dp icon, i.e. about 44 dp).
 | Phase | Title | What is shown |
 | --- | --- | --- |
 | Idle | "What’s playing?" | The cookie-shaped button, at rest, microphone on it. |
-| Recording, 12 s | "Listening…" / "Höre zu…" | **Only the microphone** (in `primary`, no button shape behind it) **and a wavy ring around it.** The ring fills clockwise from the top in the 12 s of the recording (`UiState.Listening.progress`). The height of its waves follows the loudness at the microphone: almost flat when silent, higher with the beat of the music, so one sees whether the music arrives. A faint full circle shows the track the ring fills. Hint below as now ("Hold the phone near the music." / "Halte das Handy nah an die Musik."). |
+| Recording, 12 s | "Listening…" / "Höre zu…" | **Only the microphone** (in `primary`, no button shape behind it) **and a wavy ring around it.** The ring fills clockwise from the top in the 12 s of the recording (`UiState.Listening.progress`). The waves have the standard Material 3 Expressive height (constant; owner's decision 2026-11-25, see below). A faint full circle shows the track the ring fills. Hint below as now ("Hold the phone near the music." / "Halte das Handy nah an die Musik."). |
 | Waiting for Shazam, about 1-3 s | "Recognizing…" / "Erkenne…" | The ring disappears; the Material 3 Expressive loading indicator (shapes morphing into each other while turning, `LoadingIndicator`) in `primary`, the microphone in `onPrimary` on it, same size as before. |
 | Match | - | The lyrics screen. |
 
 The owner rejected a version where the cookie shape stayed under the microphone while the ring waved around it
 ("doubled, not nice"): while recording there is only the ring.
 
-The loudness needs a level from the recorder while it records. `MicrophoneRecorder.record` reports only the
-progress now; it has to report a level too (e.g. the RMS of the last chunk, scaled and smoothed), without
-changing what is sent to Shazam. The silence check of listening along (RMS below 60) shows the scale. Keep the
-mapping from RMS to wave height a pure function with a unit test. Listening along (the automatic recordings
-after a match) shows no animation, only the "listening" hint on the lyrics screen.
-
-Built in `StartScreen.kt` and `audio/LoudnessLevel.kt`: the level is `waveAmplitude(chunkRms(...))` of each
-chunk the recorder reads (log scale from `SILENCE_RMS` 60 to `LOUD_RMS` 4000, floor 0.05 so the wave keeps
-moving), smoothed with `smoothAmplitude` (fast up, slow down). `CircularWavyProgressIndicator` reads the amplitude
-lambda while drawing but eases every change over about 0.5 s (its own tween, checked in the 1.5.0 source), so the
-waves follow the loudness in half-second steps, not each single beat.
+Decided by the owner on 2026-11-25 after trying it on the phone: the ring uses the standard Material 3 Expressive
+wave (`WavyProgressIndicatorDefaults.indicatorAmplitude`, constant height), not the loudness. A first version let
+the waves follow the loudness; that code (`LoudnessLevel.kt`, the level from `MicrophoneRecorder.record`) was
+removed. Listening along (the automatic recordings after a match) shows no animation, only the "listening" hint
+on the lyrics screen.
 
 Respect the system setting for reduced animations: then the ring only fills, without waves, and the loading
 indicator may stay still.

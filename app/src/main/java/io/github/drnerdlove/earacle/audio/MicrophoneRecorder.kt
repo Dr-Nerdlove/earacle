@@ -23,12 +23,9 @@ object MicrophoneRecorder {
     const val RECORD_SECONDS = 12
     private const val TOTAL_SAMPLES = SAMPLE_RATE_HZ * RECORD_SECONDS
 
-    /**
-     * Suspends and can be cancelled; [onProgress] gets the progress (0.0 to 1.0) and the wave height (see
-     * [waveAmplitude]) of the chunk just read.
-     */
+    /** Suspends and can be cancelled; [onProgress] gets values from 0.0 to 1.0. */
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    suspend fun record(onProgress: (progress: Float, level: Float) -> Unit): Recording = withContext(Dispatchers.IO) {
+    suspend fun record(onProgress: (Float) -> Unit): Recording = withContext(Dispatchers.IO) {
         val minBuffer = AudioRecord.getMinBufferSize(
             SAMPLE_RATE_HZ,
             AudioFormat.CHANNEL_IN_MONO,
@@ -59,9 +56,8 @@ object MicrophoneRecorder {
                 currentCoroutineContext().ensureActive()
                 val read = recorder.read(samples, filled, minOf(4096, TOTAL_SAMPLES - filled))
                 if (read < 0) throw MicrophoneException("Microphone read failed ($read)")
-                val level = waveAmplitude(chunkRms(samples, filled, read))
                 filled += read
-                onProgress(filled.toFloat() / TOTAL_SAMPLES, level)
+                onProgress(filled.toFloat() / TOTAL_SAMPLES)
             }
             Recording(samples, SAMPLE_RATE_HZ, startedAt)
         } finally {

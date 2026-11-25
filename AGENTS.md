@@ -323,7 +323,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     screen back closes the app. The decision is the pure `backAction`, unit-tested.
   - Design (decided 2026-11-25; step 1 built in PR `feature/expressive-start-screen`, not yet tried on the phone): `docs/design-plan.md` plans the move to Material 3 Expressive
     (proposal B of three): start screen with a cookie-shaped recognize button, a wavy ring around the microphone
-    while recording (its waves follow the loudness), the morphing loading indicator while Shazam answers; then the
+    while recording (standard Material 3 Expressive wave, not the loudness: owner's decision 2026-11-25 after trying it on the phone; the loudness code was removed), the morphing loading indicator while Shazam answers; then the
     lyrics screen and search/history. One screen per pull request.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
@@ -390,6 +390,9 @@ repository belongs to someone else, these points still apply unless "Project kno
   signed-in GitHub user can download workflow artifacts (source: `github/docs`, download-workflow-artifacts).
   Only people with push access see draft releases (GitHub REST API description, releases).
 - **Traps:**
+  - A recording's progress callback can run after `goHome()` cancelled it (the blocking read finishes first).
+    Updates go through `listeningProgress` (`UiState.kt`), so a cancelled recording cannot bring the listening
+    screen back.
   - AGP 9 has built-in Kotlin: do **not** apply `org.jetbrains.kotlin.android`. AGP bundles an older Kotlin
     Gradle plugin; the root `build.gradle.kts` puts the catalog's Kotlin version on the buildscript classpath
     so it is used instead. Keep the Compose compiler plugin version equal to the Kotlin version.

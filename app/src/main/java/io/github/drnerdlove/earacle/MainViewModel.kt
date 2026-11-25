@@ -5,9 +5,7 @@ import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.drnerdlove.earacle.audio.MicrophoneException
-import io.github.drnerdlove.earacle.audio.MIN_WAVE
 import io.github.drnerdlove.earacle.audio.MicrophoneRecorder
-import io.github.drnerdlove.earacle.audio.smoothAmplitude
 import io.github.drnerdlove.earacle.history.HistoryEntry
 import io.github.drnerdlove.earacle.history.HistoryLog
 import io.github.drnerdlove.earacle.history.HistoryStore
@@ -45,40 +43,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import java.util.UUID
-
-enum class ErrorKind { MICROPHONE, NETWORK, RATE_LIMITED, SERVER }
-
-sealed interface UiState {
-    data object Idle : UiState
-    data class Listening(val progress: Float, val level: Float = MIN_WAVE) : UiState
-    data object Recognizing : UiState
-    data class Found(
-        val match: RecognitionResult.Match,
-        val recordingStartedAtElapsedMs: Long,
-        /** Null while the lyrics are still being looked up. */
-        val lyrics: Lyrics? = null,
-        /** True while the app is recording again to listen along. */
-        val relistening: Boolean = false,
-        /**
-         * Manual timing correction in milliseconds, added to the position (see [SyncShift]). It belongs
-         * to the song: the same song keeps it, a new Found state starts at 0.
-         */
-        val shiftMs: Long = 0,
-        /**
-         * True for a song the user picked in the search (no recognition): listening along does not run, and
-         * every tap on a line sets the clock.
-         */
-        val byHand: Boolean = false,
-        /**
-         * False for a song picked by hand until the first tap on a line: nobody knows where in the song the
-         * music is yet, so nothing is highlighted. Always true for a recognized song.
-         */
-        val clockRunning: Boolean = true,
-    ) : UiState
-    data object NotFound : UiState
-    data class Error(val kind: ErrorKind) : UiState
-    data object PermissionDenied : UiState
-}
 
 /** The search screen (point 7). It lives next to [UiState], so a running recognition or listening along is not disturbed. */
 data class SearchState(
@@ -313,10 +277,8 @@ class MainViewModel(
         job = viewModelScope.launch {
             try {
                 tracking?.join()
-                var level = MIN_WAVE
-                val recording = MicrophoneRecorder.record { progress, chunkLevel ->
-                    level = smoothAmplitude(level, chunkLevel)
-                    _state.value = UiState.Listening(progress, level)
+                val recording = MicrophoneRecorder.record { progress ->
+                    _state.update { listeningProgress(it, progress) }
                 }
                 _state.value = UiState.Recognizing
                 _state.value = when (val result = recognizer.recognize(recording)) {
@@ -435,7 +397,7 @@ class MainViewModel(
             appVisible.first { it }
             setRelistening(true)
             val result = try {
-                val recording = MicrophoneRecorder.record { _, _ -> }
+                val recording = MicrophoneRecorder.record { }
                 // Silence is never sent to the service.
                 val answer = if (SongTracking.isSilent(recording.samples)) {
                     RecognitionResult.NoMatch
