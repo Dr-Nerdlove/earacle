@@ -321,6 +321,10 @@ repository belongs to someone else, these points still apply unless "Project kno
     stage mode, else returns from any other screen to the start screen (stops a running recognition and listening
     along; a lyrics lookup still running cannot bring the song back but still adds it to the history); on the start
     screen back closes the app. The decision is the pure `backAction`, unit-tested.
+  - Design (decided 2026-11-25, not built yet): `docs/design-plan.md` plans the move to Material 3 Expressive
+    (proposal B of three): start screen with a cookie-shaped recognize button, a wavy ring around the microphone
+    while recording (its waves follow the loudness), the morphing loading indicator while Shazam answers; then the
+    lyrics screen and search/history. One screen per pull request.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
