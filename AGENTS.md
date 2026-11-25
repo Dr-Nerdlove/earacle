@@ -336,7 +336,7 @@ repository belongs to someone else, these points still apply unless "Project kno
   `CircularWavyProgressIndicator` and the `*Emphasized` typography do not. A `Surface(onClick)` stretches its child
   to its own size: wrap a smaller icon in a centred `Box`.
 - **Code layout:** one Gradle module `app` (Kotlin + Jetpack Compose), package and applicationId
-  `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
+  `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk 37.1 (`compileSdkMinor = 1`, needed by Compose 1.13), targetSdk 37. All versions (AGP,
   Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
   `gradle/wrapper/gradle-wrapper.properties`.
 - **Build and test:** `.github/workflows/build.yml` runs on every pull request (skipped when only `*.md`
