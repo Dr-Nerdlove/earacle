@@ -198,4 +198,51 @@ class LrclibApiTest {
         assertEquals(325.0, best?.durationSeconds ?: 0.0, 0.01)
         assertTrue(best?.syncedLyrics?.contains("Real") == true)
     }
+
+    @Test
+    fun parsesLyricsfileAndWordSyncFlag() {
+        val body = """[{"trackName":"A","artistName":"B","duration":200.0,"instrumental":false,
+            "plainLyrics":null,"syncedLyrics":"[00:01.00] x","lyricsfile":"lines:\n- text: x\n  start_ms: 1000\n",
+            "hasWordSync":true},{"trackName":"C","artistName":"D","duration":1,"instrumental":false,
+            "plainLyrics":null,"syncedLyrics":null,"lyricsfile":null}]"""
+        val tracks = LrclibApi.parseSearchResults(body)!!
+        assertEquals("lines:\n- text: x\n  start_ms: 1000\n", tracks[0].lyricsfile)
+        assertTrue(tracks[0].hasWordSync)
+        assertNull(tracks[1].lyricsfile)
+        assertEquals(false, tracks[1].hasWordSync)
+    }
+
+    private fun wordTrack(duration: Double, wordSync: Boolean, title: String = "Bohemian Rhapsody", synced: String? = "[00:01.00] Hi") =
+        LrclibTrack(title, "Queen", duration, false, null, synced, if (wordSync) "lines: []" else null, wordSync)
+
+    @Test
+    fun prefersWordSyncAmongVersionsOfTheSameLength() {
+        val plain = wordTrack(355.0, false)
+        val words = wordTrack(356.5, true)
+        assertEquals(words, LrclibApi.pickBest(listOf(plain, words), "Bohemian Rhapsody", "Queen"))
+        assertEquals(words, LrclibApi.pickBest(listOf(plain, words), "Bohemian Rhapsody", "Queen", 355.0))
+    }
+
+    @Test
+    fun wordSyncNeverChangesTheChosenLength() {
+        val usual1 = wordTrack(355.0, false)
+        val usual2 = wordTrack(355.5, false)
+        val radioEditWithWords = wordTrack(200.0, true)
+        assertEquals(usual1, LrclibApi.pickBest(listOf(usual1, usual2, radioEditWithWords), "Bohemian Rhapsody", "Queen"))
+        assertEquals(usual1, LrclibApi.pickBest(listOf(usual1, radioEditWithWords), "Bohemian Rhapsody", "Queen", 355.0))
+    }
+
+    @Test
+    fun wordSyncNeverPicksAnotherSongOrVariant() {
+        val studio = wordTrack(355.0, false)
+        val live = wordTrack(355.0, true, title = "Bohemian Rhapsody (Live)")
+        assertEquals(studio, LrclibApi.pickBest(listOf(studio, live), "Bohemian Rhapsody", "Queen"))
+    }
+
+    @Test
+    fun wordSyncFlagWithoutLyricsfileDoesNotCount() {
+        val a = wordTrack(355.0, false)
+        val flagOnly = a.copy(durationSeconds = 355.2, hasWordSync = true, lyricsfile = null)
+        assertEquals(a, LrclibApi.pickBest(listOf(a, flagOnly), "Bohemian Rhapsody", "Queen"))
+    }
 }

@@ -62,6 +62,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // Reads LRCLIB's lyricsfile (YAML with line ends and word times).
+    implementation(libs.snakeyaml.engine)
     testImplementation(libs.junit)
     // Android ships org.json, but in JVM unit tests android.jar only has stubs of it.
     testImplementation(libs.org.json)
