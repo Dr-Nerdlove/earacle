@@ -31,7 +31,7 @@ singing, since one looks at the screen anyway).
 - [x] 3. The current line fills up - branch `feature/line-fill`, PR #30
 - [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
 - [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
-- [ ] 6. Stage mode - branch `feature/stage-mode`
+- [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
 
 ## Ground rules for all points
 
@@ -267,6 +267,20 @@ Sabotage: e.g. no upper limit.
 **On the phone:** readable from 2-3 m in portrait and landscape; long lines wrap rather than being cut; the
 mode and size are still set after closing and reopening the app; light and dark system theme (stage mode is
 always dark).
+
+**Built (point 6):** `lyrics/StageMode.kt` (`nextTextSize`, `clampTextSize`, `stageLines`, `showsStageMode`,
+`StageSettings`, `StageStore`) and `StagePreferences.kt` (SharedPreferences, file `stage_mode`). Choices the plan
+left open: (a) the text size goes in 5 steps from 32 to 64 sp (`StageText`, default 40, `A−` / `A+` in 8 sp steps);
+the next line is drawn at 0.6 of that. (b) The entry button (fullscreen icon) sits at the *left* end of the row
+with "Try again", not next to the sync button, so the buttons do not jump when the sync button appears and goes.
+(c) Stage mode only applies to a song with synced lyrics (or while they load, so there is no flicker between
+songs); plain lyrics and messages use the normal screen, and the saved choice applies again with the next
+synced song. While "Try again" listens the screen stays dark. (d) The theme is forced dark with a black
+background, and the status and navigation bar icons turn light (`SystemBarStyle.dark`). (e) The block of
+current line, dots and next line is centred vertically as a whole, so it moves a little when a line wraps
+differently; a line too long for the screen at the chosen size scrolls inside the middle area. (f) The countdown
+dots grow with the text (a third of the size). (g) Tapping a line does not set the timing in stage mode (there
+is no list); use the `±0.5 s` buttons. Four new texts, in English and German.
 
 ## After the points
 

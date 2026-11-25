@@ -7,6 +7,7 @@ import android.os.SystemClock
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -29,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -41,6 +43,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -51,6 +54,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -63,7 +67,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import io.github.drnerdlove.earacle.lyrics.CountdownTiming
 import io.github.drnerdlove.earacle.lyrics.LyricLine
+import io.github.drnerdlove.earacle.lyrics.StageSettings
+import io.github.drnerdlove.earacle.lyrics.StageText
 import io.github.drnerdlove.earacle.lyrics.SyncShift
+import io.github.drnerdlove.earacle.lyrics.nextTextSize
+import io.github.drnerdlove.earacle.lyrics.showsStageMode
+import io.github.drnerdlove.earacle.lyrics.stageLines
 import io.github.drnerdlove.earacle.lyrics.formatShift
 import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.lyrics.Lyrics
@@ -88,6 +97,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import io.github.drnerdlove.earacle.lyrics.filledEndIndex
 import androidx.compose.ui.platform.LocalContext
@@ -97,7 +107,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -120,13 +132,35 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel.attachStageStore(StagePreferences(this))
         enableEdgeToEdge()
         // Keep the screen on while the app is visible, so the lyrics stay readable. The flag
         // only applies while this window is shown; the system ignores it in the background.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContent {
-            EaracleTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            val state by viewModel.state.collectAsState()
+            val stage by viewModel.stage.collectAsState()
+            // Stage mode is always dark, whatever the system theme says, also while "Try again" listens.
+            val stageLook = stage.enabled && when (val current = state) {
+                is UiState.Found -> showsStageMode(true, current.lyrics)
+                is UiState.Listening, UiState.Recognizing -> true
+                else -> false
+            }
+            DisposableEffect(stageLook) {
+                // Light icons in the status and navigation bar on the black stage.
+                val bars = if (stageLook) {
+                    SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+                onDispose {}
+            }
+            EaracleTheme(forceDark = stageLook) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    containerColor = if (stageLook) Color.Black else MaterialTheme.colorScheme.background,
+                ) { innerPadding ->
                     MainScreen(viewModel, Modifier.padding(innerPadding))
                 }
             }
@@ -135,8 +169,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EaracleTheme(content: @Composable () -> Unit) {
-    val darkTheme = isSystemInDarkTheme()
+fun EaracleTheme(forceDark: Boolean = false, content: @Composable () -> Unit) {
+    val darkTheme = isSystemInDarkTheme() || forceDark
     val colorScheme = when {
         Build.VERSION.SDK_INT >= 31 -> {
             val context = LocalContext.current
@@ -151,6 +185,7 @@ fun EaracleTheme(content: @Composable () -> Unit) {
 @Composable
 fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
+    val stage by viewModel.stage.collectAsState()
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -181,6 +216,9 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         onTapLine = { viewModel.tapLine(it) },
         onNudge = viewModel::nudgeShift,
         onResetShift = viewModel::resetShift,
+        stage = stage,
+        onStageChange = viewModel::setStageMode,
+        onStageTextSize = viewModel::changeStageTextSize,
     )
 }
 
@@ -193,11 +231,29 @@ fun MainContent(
     onTapLine: (Long) -> Boolean = { false },
     onNudge: (Long) -> Unit = {},
     onResetShift: () -> Unit = {},
+    stage: StageSettings = StageSettings(),
+    onStageChange: (Boolean) -> Unit = {},
+    /** `A+` (true) or `A−` (false) in stage mode. */
+    onStageTextSize: (Boolean) -> Unit = {},
 ) {
     val busy = state is UiState.Listening || state is UiState.Recognizing
     val retry = state is UiState.NotFound || state is UiState.Error ||
         state is UiState.PermissionDenied || state is UiState.Found
     val buttonLabel = stringResource(if (retry) R.string.button_try_again else R.string.button_recognize)
+    if (state is UiState.Found && showsStageMode(stage.enabled, state.lyrics)) {
+        StageContent(
+            state,
+            stage,
+            busy = busy,
+            onRecognize = onRecognize,
+            onLeave = { onStageChange(false) },
+            onTextSize = onStageTextSize,
+            onNudge = onNudge,
+            onResetShift = onResetShift,
+            modifier = modifier,
+        )
+        return
+    }
     if (state is UiState.Found) {
         // Compact header at the top, lyrics take all remaining space, button always visible.
         Column(
@@ -227,6 +283,21 @@ fun MainContent(
                     enabled = !busy,
                     modifier = Modifier.align(Alignment.Center),
                 ) { Text(buttonLabel) }
+                if (syncedLines != null) {
+                    // Stage mode: very large lyrics for singing along from a distance.
+                    FilledTonalIconButton(
+                        onClick = { onStageChange(true) },
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .size(ButtonDefaults.MinHeight),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_fullscreen),
+                            contentDescription = stringResource(R.string.stage_enter),
+                        )
+                    }
+                }
                 if (syncedLines != null && !following) {
                     FilledTonalIconButton(
                         onClick = { following = true },
@@ -295,6 +366,34 @@ private fun StatusArea(state: UiState) {
     }
 }
 
+/** The clock of the lyrics screen: [SystemClock.elapsedRealtime], refreshed every 200 ms while [state] shows. */
+@Composable
+private fun rememberNowMs(state: UiState.Found): Long {
+    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    LaunchedEffect(state) {
+        while (true) {
+            now = SystemClock.elapsedRealtime()
+            delay(200)
+        }
+    }
+    return now
+}
+
+/**
+ * The song position (with the manual shift, which applies to the shown time and to the lyrics alike)
+ * at a given SystemClock.elapsedRealtime(). The countdown dots and the fill call it once per frame.
+ */
+@Composable
+private fun rememberPositionAt(state: UiState.Found): (Long) -> Long = remember(state) {
+    { elapsedMs: Long ->
+        val seconds = SongTracking.displayPosition(
+            positionSeconds(state.match.offsetSeconds, state.recordingStartedAtElapsedMs, elapsedMs),
+            state.lyrics.songDurationSeconds,
+        )
+        syncedPositionMs((seconds * 1000).toLong(), state.shiftMs)
+    }
+}
+
 @Composable
 private fun ColumnScope.FoundContent(
     state: UiState.Found,
@@ -305,24 +404,8 @@ private fun ColumnScope.FoundContent(
     onResetShift: () -> Unit,
 ) {
     val match: RecognitionResult.Match = state.match
-    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
-    LaunchedEffect(state) {
-        while (true) {
-            now = SystemClock.elapsedRealtime()
-            delay(200)
-        }
-    }
-    // The song position (with the manual shift, which applies to the shown time and to the lyrics alike)
-    // at a given SystemClock.elapsedRealtime(). The countdown dots call it once per frame.
-    val positionAt = remember(state) {
-        { elapsedMs: Long ->
-            val seconds = SongTracking.displayPosition(
-                positionSeconds(match.offsetSeconds, state.recordingStartedAtElapsedMs, elapsedMs),
-                state.lyrics.songDurationSeconds,
-            )
-            syncedPositionMs((seconds * 1000).toLong(), state.shiftMs)
-        }
-    }
+    val now = rememberNowMs(state)
+    val positionAt = rememberPositionAt(state)
     val positionMs = positionAt(now)
     val position = formatPosition(positionMs / 1000.0)
     // No app name above the song: the lyrics get the space.
@@ -509,7 +592,12 @@ private fun lyricText(text: String, mutedColor: Color): AnnotatedString = buildA
  * frame redraws only this line and does not recompose the lyrics list.
  */
 @Composable
-private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -> Long) {
+private fun FillingLine(
+    lines: List<LyricLine>,
+    index: Int,
+    positionAt: (Long) -> Long,
+    style: TextStyle = MaterialTheme.typography.titleLarge,
+) {
     val latestLines by rememberUpdatedState(lines)
     val latestPositionAt by rememberUpdatedState(positionAt)
     var frameTime by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
@@ -525,7 +613,7 @@ private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -
     val text = lyricText(plain, muted)
     Text(
         text = text,
-        style = MaterialTheme.typography.titleLarge,
+        style = style,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
         textAlign = TextAlign.Center,
@@ -568,19 +656,27 @@ private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -
     )
 }
 
-/** Height reserved for the countdown dots, so a line does not change size when they appear. */
-private val CountdownSlotHeight = 20.dp
+/** Diameter of a countdown dot on the normal screen; stage mode uses bigger ones. */
+private val CountdownDotSize = 8.dp
 
-/** A fixed-height row that holds the countdown dots while [show] is true. */
+/**
+ * A fixed-height row that holds the countdown dots while [show] is true. Its height is reserved (2.5 dots),
+ * so a line does not change size when the dots appear.
+ */
 @Composable
-private fun CountdownSlot(show: Boolean, lines: List<LyricLine>, positionAt: (Long) -> Long) {
+private fun CountdownSlot(
+    show: Boolean,
+    lines: List<LyricLine>,
+    positionAt: (Long) -> Long,
+    dot: Dp = CountdownDotSize,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(CountdownSlotHeight),
+            .height(dot * 2.5f),
         contentAlignment = Alignment.Center,
     ) {
-        if (show) CountdownDots(lines, positionAt)
+        if (show) CountdownDots(lines, positionAt, dot)
     }
 }
 
@@ -589,7 +685,7 @@ private fun CountdownSlot(show: Boolean, lines: List<LyricLine>, positionAt: (Lo
  * (in `drawBehind`), so a frame redraws only these dots and does not recompose the lyrics list.
  */
 @Composable
-private fun CountdownDots(lines: List<LyricLine>, positionAt: (Long) -> Long) {
+private fun CountdownDots(lines: List<LyricLine>, positionAt: (Long) -> Long, dot: Dp) {
     val latestLines by rememberUpdatedState(lines)
     val latestPositionAt by rememberUpdatedState(positionAt)
     var frameTime by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
@@ -600,8 +696,7 @@ private fun CountdownDots(lines: List<LyricLine>, positionAt: (Long) -> Long) {
     }
     val lit = MaterialTheme.colorScheme.primary
     val out = lit.copy(alpha = 0.2f)
-    val dot = 8.dp
-    val gap = 8.dp
+    val gap = dot
     Box(
         modifier = Modifier
             .size(width = dot * CountdownTiming.DOTS + gap * (CountdownTiming.DOTS - 1), height = dot)
@@ -618,6 +713,191 @@ private fun CountdownDots(lines: List<LyricLine>, positionAt: (Long) -> Long) {
                 }
             },
     )
+}
+
+/**
+ * Stage mode: black background, the current line very large in the middle, the next one smaller below it,
+ * all other lines hidden. One small line with title and artist at the top, small controls at the bottom.
+ * The theme is dark here (see [MainActivity]); the countdown, the fill and the backing vocals work as on the
+ * normal screen.
+ */
+@Composable
+private fun StageContent(
+    state: UiState.Found,
+    stage: StageSettings,
+    busy: Boolean,
+    onRecognize: () -> Unit,
+    onLeave: () -> Unit,
+    onTextSize: (Boolean) -> Unit,
+    onNudge: (Long) -> Unit,
+    onResetShift: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val lines = (state.lyrics as? Lyrics.Synced)?.lines
+    val now = rememberNowMs(state)
+    val positionAt = rememberPositionAt(state)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "${displayTitle(state.match.title)} – ${state.match.artist}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (lines == null) {
+            // The lyrics of a new song are still being looked up.
+            CenteredInRemainingSpace { CircularProgressIndicator() }
+        } else {
+            StageLyrics(lines, positionAt(now), positionAt, stage.textSizeSp)
+        }
+        StageControls(
+            textSizeSp = stage.textSizeSp,
+            shiftMs = state.shiftMs,
+            busy = busy,
+            onRecognize = onRecognize,
+            onLeave = onLeave,
+            onTextSize = onTextSize,
+            onNudge = onNudge,
+            onResetShift = onResetShift,
+        )
+    }
+}
+
+/** The lines of stage mode ([stageLines]) centred in the remaining space; long lines wrap, never get cut. */
+@Composable
+private fun ColumnScope.StageLyrics(
+    lines: List<LyricLine>,
+    positionMs: Long,
+    positionAt: (Long) -> Long,
+    textSizeSp: Int,
+) {
+    val shown = stageLines(lines, positionMs)
+    val pause = countdown(lines, positionMs)
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val currentStyle = MaterialTheme.typography.titleLarge.copy(
+        fontSize = textSizeSp.sp,
+        lineHeight = (textSizeSp * 1.2f).sp,
+    )
+    val nextSizeSp = textSizeSp * StageText.NEXT_LINE_SCALE
+    val nextStyle = MaterialTheme.typography.bodyLarge.copy(
+        fontSize = nextSizeSp.sp,
+        lineHeight = (nextSizeSp * 1.25f).sp,
+    )
+    val dot = (textSizeSp / 3f).dp
+    // A line too long for the screen at this size scrolls (and starts at the top again with every new line).
+    val scroll = rememberScrollState()
+    LaunchedEffect(shown.currentIndex) { scroll.scrollTo(0) }
+    BoxWithConstraints(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = maxHeight)
+                .verticalScroll(scroll),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            val current = shown.currentIndex.takeIf { it >= 0 }?.let { lines[it] }
+            when {
+                // A line with text: the fill runs over it, the dots (in a pause) stand below it.
+                current != null && current.text.isNotBlank() -> {
+                    FillingLine(lines, shown.currentIndex, positionAt, currentStyle)
+                    CountdownSlot(pause != null, lines, positionAt, dot)
+                }
+                // Before the first line: the dots stand above the next one.
+                current == null -> CountdownSlot(pause != null, lines, positionAt, dot)
+                // An empty line (instrumental part): the dots in place of the ♪.
+                pause != null -> CountdownSlot(true, lines, positionAt, dot)
+                else -> Text("♪", style = currentStyle, color = muted, textAlign = TextAlign.Center)
+            }
+            shown.nextIndex?.let { next ->
+                Spacer(Modifier.height(dot))
+                Text(
+                    text = lyricText(lines[next].text, muted),
+                    style = nextStyle,
+                    // Already a little brighter while the dots count down, as on the normal screen.
+                    color = if (pause != null) MaterialTheme.colorScheme.onSurface else muted,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+/** Width from which the stage controls fit in one row (landscape); below it they take two rows. */
+private val StageControlsOneRowWidth = 600.dp
+
+/** Small controls at the bottom of stage mode: leave, text size, timing shift and "Try again". */
+@Composable
+private fun StageControls(
+    textSizeSp: Int,
+    shiftMs: Long,
+    busy: Boolean,
+    onRecognize: () -> Unit,
+    onLeave: () -> Unit,
+    onTextSize: (Boolean) -> Unit,
+    onNudge: (Long) -> Unit,
+    onResetShift: () -> Unit,
+) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val smaller = stringResource(R.string.stage_text_smaller)
+    val larger = stringResource(R.string.stage_text_larger)
+    val actions: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onLeave) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_fullscreen_exit),
+                    contentDescription = stringResource(R.string.stage_exit),
+                    tint = muted,
+                )
+            }
+            TextButton(
+                onClick = { onTextSize(false) },
+                enabled = nextTextSize(textSizeSp, up = false) != textSizeSp,
+                modifier = Modifier.semantics { contentDescription = smaller },
+            ) { Text("A−") }
+            TextButton(
+                onClick = { onTextSize(true) },
+                enabled = nextTextSize(textSizeSp, up = true) != textSizeSp,
+                modifier = Modifier.semantics { contentDescription = larger },
+            ) { Text("A+") }
+            TextButton(onClick = onRecognize, enabled = !busy) {
+                Text(stringResource(R.string.button_try_again))
+            }
+        }
+    }
+    val shift: @Composable () -> Unit = { ShiftRow(shiftMs, onNudge, onResetShift) }
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth >= StageControlsOneRowWidth) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                actions()
+                shift()
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                shift()
+                actions()
+            }
+        }
+    }
 }
 
 /** "−0.5 s", the current shift (tap to reset) and "+0.5 s"; positive moves the lyrics ahead. */

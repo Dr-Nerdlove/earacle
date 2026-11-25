@@ -249,7 +249,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     duration so the right version (radio edit, live, remix) is found.
   - Sync: position from the recognition result + time elapsed since the audio sample. A manual
     correction (tap the line being sung, ±0.5 s steps) is planned as point 1 of `docs/karaoke-plan.md`.
-  - Karaoke features (decided 2026-11-24, not built yet): `docs/karaoke-plan.md` plans six points (tap to
+  - Karaoke features (decided 2026-11-24, all six built): `docs/karaoke-plan.md` plans six points (tap to
     sync, countdown, line fill, word timing, backing vocals, stage mode), one session and pull request each,
     in that order; it also records what real LRCLIB lyrics contain and what was decided against and why.
   - Listening along (built, `SongTracking` + `MainViewModel`): after a first match from the button, the app
@@ -287,6 +287,10 @@ repository belongs to someone else, these points still apply unless "Project kno
   - Backing vocals (built, point 5, `lyrics/Backing.kt`): text in balanced, non-nested `( ... )` is drawn at
     0.75 em in the muted colour (`lyricText` in `MainActivity.kt`), also in the line being sung. Unbalanced or
     nested parentheses leave the whole line normal. Checked only by tests, not yet on a phone.
+  - Stage mode (built, point 6, `lyrics/StageMode.kt`, `StagePreferences.kt`, `StageContent` in `MainActivity.kt`):
+    black, always dark theme; current line 32-64 sp (5 steps, `A−` / `A+`), next line at 0.6 of it, other lines
+    hidden; on and size are in `MainViewModel.stage` (survives rotation) and saved in SharedPreferences. Only for
+    songs with synced lyrics. Unit-tested (size steps, which lines show); the screen itself is only compile-checked by CI, not yet seen on a phone.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple

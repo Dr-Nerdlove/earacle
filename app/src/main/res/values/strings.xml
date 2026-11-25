@@ -23,4 +23,8 @@
     <string name="shift_later">Show the lyrics 0.5 seconds later</string>
     <string name="shift_earlier">Show the lyrics 0.5 seconds earlier</string>
     <string name="shift_reset">Reset the timing to zero</string>
+    <string name="stage_enter">Stage mode: very large lyrics for singing along from a distance</string>
+    <string name="stage_exit">Leave stage mode</string>
+    <string name="stage_text_smaller">Make the text smaller</string>
+    <string name="stage_text_larger">Make the text larger</string>
 </resources>

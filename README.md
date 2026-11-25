@@ -36,6 +36,10 @@ the screen off) is not built yet; see "Planned".
   from its length); wrapped lines fill one visual line after the other. Where the lyrics carry word times
   (enhanced LRC), it jumps word by word on the real times; no time tags are ever shown as text
 - Backing vocals (text in parentheses) are shown smaller and muted, so the lead line is easy to follow
+- Stage mode for singing along from a distance (button at the left of the sync button): black background, the
+  current line very large in the middle, the next one smaller below it, everything else hidden; `A−` / `A+`
+  change the text size, the timing buttons and "Try again" stay within reach. Works in portrait and landscape;
+  the mode and the size are remembered after closing the app
 - Shows plain lyrics, or a clear message, when no synced lyrics exist
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
   recordings in a row without a match
@@ -44,7 +48,6 @@ the screen off) is not built yet; see "Planned".
 ## Planned
 
 - Listening with the screen off, in the background, through a foreground service
-- Karaoke features for singing along: a stage mode with very large text (see [the plan](docs/karaoke-plan.md))
 - Possible fallback recognition with Olaf against your own music library, in case the unofficial Shazam API
   stops working
 
