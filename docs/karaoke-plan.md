@@ -34,8 +34,8 @@ singing, since one looks at the screen anyway).
 - [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
 - [ ] 7. Search a song by hand - branch `feature/manual-search`
 - [ ] 8. Recently heard songs - branch `feature/song-history`
-- [ ] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (proposed, waiting
-  for the owner's decision)
+- [ ] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
+  2026-11-25; done first, before 7 and 8)
 
 ## Ground rules for all points
 
@@ -293,8 +293,7 @@ is no list); use the `±0.5 s` buttons. Four new texts, in English and German.
 ## Second round (planned 2026-11-25)
 
 Planned after points 1 to 6 were released as v0.6.0. Point 8 builds on point 7 and comes after it. Point 9
-does not depend on 7 and 8 and may be done before, between or after them; it is only built once the owner has
-agreed to it (then remove "proposed" from its status line). The ground rules above apply to all three.
+does not depend on 7 and 8; the owner agreed to it on 2026-11-25 and chose to do it first, before 7 and 8. The ground rules above apply to all three.
 
 At the same time, the owner dropped two older ideas (see "Rejected options" in AGENTS.md): listening in the
 background with the screen off, and own recognition with Olaf against the music files on the phone.
@@ -390,7 +389,7 @@ URL. Sabotage: e.g. no limit, or no dedupe.
 close and reopen the app (the list stays); clear it; install the update over the old version (the app
 starts with an empty list, nothing breaks).
 
-## 9. Real word and line times from LRCLIB's lyricsfile (proposed)
+## 9. Real word and line times from LRCLIB's lyricsfile
 
 **Why:** LRCLIB answers carry a `lyricsfile` field: YAML with the start and end time of every line and, for
 about a third of the synced entries (see the correction under "What the real lyrics look like"), the start

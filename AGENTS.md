@@ -254,7 +254,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     in that order; it also records what real LRCLIB lyrics contain and what was decided against and why.
     Points 1-6 are built (v0.5.0, v0.6.0). A second round (2026-11-25) plans point 7 (search a song by hand,
     the fallback for Shazam), point 8 (recently heard songs) and point 9 (word and line times from LRCLIB's
-    `lyricsfile`, proposed, not yet agreed by the owner).
+    `lyricsfile`), in the order 9, 7, 8.
   - Listening along (built, `SongTracking` + `MainViewModel`): after a first match from the button, the app
     records 12 s again after a pause that grows while the same song keeps being confirmed (15 s, then
     45 s, then 105 s after a recognition finished: about 27 s, 1 min, 2 min between recordings; at most 45 s
