@@ -82,6 +82,10 @@ indicator may stay still.
 
 ## 2. Lyrics screen
 
+- Also in this step (owner, 2026-11-25, after trying step 1 on the phone): the start screen headlines "What’s
+  playing?" / "Was läuft gerade?", "Listening…" / "Höre zu…" and "Recognizing…" / "Erkenne…" become bold. The
+  `displaySmallEmphasized` style of step 1 looks like the normal weight with `MaterialTheme` (no
+  `MaterialExpressiveTheme`), so set the weight explicitly (e.g. `FontWeight.Bold`).
 - At the top a song card (rounded container): back arrow (same as the back gesture: to the start screen), title
   in an emphasized style, artist below, and a small "listening" / "hört mit" badge while listening along runs.
 - The current line large and bold (emphasized typography), the next line a little smaller and brighter than the
