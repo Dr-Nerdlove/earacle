@@ -235,7 +235,7 @@ repository belongs to someone else, these points still apply unless "Project kno
   program. The owner alone decides about merging and releases.
 - **Product languages:** German and English. Every user-facing text exists in both (`values/strings.xml`
   for English as the default, `values-de/strings.xml` for German), in the same change.
-- **Planned architecture (decided, not built yet):**
+- **Architecture (decided and built; v0.8.1):**
   - Kotlin + Jetpack Compose; microphone capture with `AudioRecord` (PCM 16-bit mono) while the app is
     visible (no foreground service; see "Rejected options").
   - Song recognition through the **unofficial (reverse-engineered) Shazam API**, as used by open-source
@@ -248,11 +248,11 @@ repository belongs to someone else, these points still apply unless "Project kno
   - Synced lyrics (LRC format) from **LRCLIB** (`lrclib.net`, free, no API key). Send title, artist and
     duration so the right version (radio edit, live, remix) is found.
   - Sync: position from the recognition result + time elapsed since the audio sample. A manual
-    correction (tap the line being sung, ±0.5 s steps) is planned as point 1 of `docs/karaoke-plan.md`.
-  - Karaoke features (decided 2026-11-24, all six built): `docs/karaoke-plan.md` plans six points (tap to
+    correction (tap the line being sung, ±0.5 s steps) is point 1 of `docs/karaoke-plan.md` (built).
+  - Karaoke features (decided 2026-11-24; all ten points built, v0.5.0 to v0.8.1): `docs/karaoke-plan.md` plans six points (tap to
     sync, countdown, line fill, word timing, backing vocals, stage mode), one session and pull request each,
     in that order; it also records what real LRCLIB lyrics contain and what was decided against and why.
-    Points 1-6 are built (v0.5.0, v0.6.0). A second round (2026-11-25) plans point 7 (search a song by hand,
+    Points 1-6 are built (v0.5.0, v0.6.0). A second round (2026-11-25) added point 7 (search a song by hand,
     the fallback for Shazam), point 8 (a song history page without limit, with date and time) and point 9 (word and line times from LRCLIB's
     `lyricsfile`), in the order 9, 7, 8; then point 10 (a stronger fill colour for Material You palettes
     where the fill hardly differs from the grey text).
@@ -286,22 +286,22 @@ repository belongs to someone else, these points still apply unless "Project kno
   - Word timing (built, point 4, `Lrc.kt`, `LineFill.kt`): `Lrc.parse` removes `<mm:ss.xx>` and mid-line
     `[mm:ss.xx]` tags (broken ones too) into `LyricLine.words` (UTF-16 index + time) and `endTimeMs` (tag after the
     last word, also used by `estimatedLineEndMs`); repeated-timestamp lines keep no word times. `filledEndIndex`
-    jumps word by word when a line has them, else uses the even pace. Not checked on real data (LRCLIB had none
-    on 2026-11-24), only by tests. A mid-line `[..]` stamp used to stay in the text; that old test was replaced.
+    jumps word by word when a line has them, else uses the even pace. The enhanced-LRC `<mm:ss.xx>` tags are not checked on real data (LRCLIB had none
+    on 2026-11-24), only by tests; word times from the lyricsfile (point 9) are confirmed on the phone. A mid-line `[..]` stamp used to stay in the text; that old test was replaced.
   - Backing vocals (built, point 5, `lyrics/Backing.kt`): text in balanced, non-nested `( ... )` is drawn at
     0.75 em in the muted colour (`lyricText` in `MainActivity.kt`), also in the line being sung. Unbalanced or
-    nested parentheses leave the whole line normal. Checked only by tests, not yet on a phone.
+    nested parentheses leave the whole line normal. Seen on a phone screenshot (owner, 2026-11-25).
   - Stage mode (built, point 6, `lyrics/StageMode.kt`, `StagePreferences.kt`, `StageContent` in `MainActivity.kt`):
     black, always dark theme; current line 32-64 sp (5 steps, `A−` / `A+`), next line at 0.6 of it, other lines
     hidden; on and size are in `MainViewModel.stage` (survives rotation) and saved in SharedPreferences. Only for
-    songs with synced lyrics. Unit-tested (size steps, which lines show); the screen itself is only compile-checked by CI, not yet seen on a phone.
+    songs with synced lyrics. Unit-tested (size steps, which lines show); works on the owner's phone (2026-11-25).
   - Search by hand (built, point 7, `lyrics/ManualSong.kt`, `SearchScreen.kt`, `MainViewModel.search`): a
     "Search song" button on the start, not-recognized, error and no-synced-lyrics screens opens a search field;
     LRCLIB's `/api/search?q=` answers, entries with synced lyrics first, entries without any lyrics left out.
     A picked song is `UiState.Found(byHand = true, clockRunning = false)`: nothing is highlighted until the first
     tap on a line, which starts the clock there (every tap of a picked song sets the clock, no 30 s limit);
     listening along does not run for it. The search state is separate from `UiState` (see `docs/karaoke-plan.md`).
-    Checked by tests only (logic), not yet on a phone.
+    Works on the owner's phone (2026-11-25).
   - Song history (built, point 8, package `history/`, `HistoryScreen.kt`): every recognized song (once its lyrics
     lookup has finished, so the entry can carry LRCLIB's id) and every song picked by hand is appended to
     `history.jsonl` in the app's files folder, one JSON object per line (`HistoryLine`, version `v` 1, org.json); a
@@ -309,14 +309,14 @@ repository belongs to someone else, these points still apply unless "Project kno
     than `SongHistory.SAME_SONG_GAP_MS` (10 min) is not added again. Opening an entry works like a song picked by
     hand (nothing highlighted until the first tap) and loads exactly its LRCLIB version through `/api/get/{id}`,
     else the normal lookup; it adds no entry. `allowBackup` stays true, so Android's backup includes the history.
-    Logic and file are unit-tested; the page, swipe and snackbar are only compile-checked, not yet on a phone.
+    Logic and file are unit-tested; the page works on the owner's phone (2026-11-25, v0.8.0). The undo fix (`HistoryRow`, v0.8.1, PR #47) is confirmed on the phone (owner, 2026-11-25).
   - Stronger fill colour (built, point 10, `lyrics/FillColour.kt`, `LocalLyricFill` in `MainActivity.kt`): `fillColour(primary,
     muted, background)` keeps `colorScheme.primary` when its CIE76 difference to the muted text
     (`onSurfaceVariant`) is at least `MIN_FILL_DIFFERENCE` (65, chosen by the owner from a preview); otherwise it takes the nearest colour of
     the same hue (more chroma, lightness either way) that reaches 65 and keeps WCAG 4.5:1 on the background (black in
     stage mode); none reaching 35 means the closest one. `EaracleTheme` computes it once per scheme and provides
     it as `LocalLyricFill`, used by the filling line, the current line and the countdown dots. The muted text is
-    unchanged. Tested on the JVM (including the owner's palette); on the phone not yet seen.
+    unchanged. Tested on the JVM (including the owner's palette); the owner confirmed on the phone (2026-11-25) that the colour now fits.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
@@ -369,8 +369,11 @@ repository belongs to someone else, these points still apply unless "Project kno
   `vMAJOR.MINOR.PATCH`. CI: GitHub Actions, `build.yml` (tests and compile check on pull requests, test APK by hand), `release.yml`
   (releases, by hand) and `gitleaks.yml` (secret scan of
   every push and pull request with `gitleaks/gitleaks-action`; no licence key needed because the repository
-  belongs to a personal account, not an organization). Branch protection is available now that the
-  repository is public (free plan); whether to set it up is the owner's decision.
+  belongs to a personal account, not an organization). Branch protection: the ruleset "protect main branch"
+  (active since 2026-11-19, applies to the default branch, no bypass actors) has the rules `deletion` and
+  `non_fast_forward`: `main` cannot be deleted or force-pushed. It requires no pull request and no status
+  check, so pull requests are merged by choice, not by force of the ruleset (read 2026-11-25 with
+  `gh api repos/Dr-Nerdlove/earacle/rulesets`).
   Because the repository is public, anyone can read the code, the pull requests and the Actions logs, and any
   signed-in GitHub user can download workflow artifacts (source: `github/docs`, download-workflow-artifacts).
   Only people with push access see draft releases (GitHub REST API description, releases).
@@ -402,18 +405,21 @@ repository belongs to someone else, these points still apply unless "Project kno
     start and end, word times, read with the library SnakeYAML Engine, Apache 2.0, chosen by the owner on
     2026-11-25), then `syncedLyrics`, then plain lyrics; invalid YAML falls back silently. Words are kept only
     when they join to the line's text (trailing blanks aside). `pickBest` prefers a version with `hasWordSync`
-    and a lyricsfile only among versions of the same kind within 3 s of the chosen length. Checked by tests
-    only, not yet on a phone, and not yet against a real answer's YAML (the structure comes from LRCLIB's docs).
+    and a lyricsfile only among versions of the same kind within 3 s of the chosen length. Confirmed on the owner's
+    phone with real answers (2026-11-25, e.g. "Blinding Lights": words turn coloured one by one).
   - LRCLIB answers carry more than `syncedLyrics`: `lyricsfile` (YAML with line start/end and word times,
     format may still change) and `hasWordSync`. A check of `syncedLyrics` alone (2026-11-24) wrongly found no
     word timing; look at every field of a real answer before concluding.
   - `rememberSwipeToDismissBoxState` is saveable, and a `LazyColumn` keeps saved state per item key: a deleted
     history entry that came back through "Undo" stayed swiped away (red, with the bin; seen on the phone with
     v0.8.0). `HistoryRow` snaps its state back to `Settled` when it enters the composition.
-  - `lrclib.net` is not on the cloud environment's network allow-list by default; add the host (via the
-    environment tools) to check the real API there.
-- **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
-  Maven repository (`dl.google.com`) or `services.gradle.org`, so Gradle cannot build the app there. Build through the GitHub
-  Actions workflow and read its logs with `gh api` (GitHub's GraphQL API is blocked in the cloud session;
-  use REST). A cloud session cannot push tags, so releases are started by hand in
-  GitHub Actions (see "Release").
+  - Network access of cloud sessions depends on the environment's network policy. In the 2026-11-25 session
+    (open network) `lrclib.net`, `dl.google.com` and `services.gradle.org` were all reachable. With a
+    restricted policy, `lrclib.net` has to be allowed (via the environment tools) to check the real API.
+- **Limits of the environment:** the Claude Code cloud session has no Android SDK installed (checked
+  2026-11-25), so the app is built through the GitHub Actions workflow, whose logs are read with `gh api`
+  (GitHub's GraphQL API is blocked in the cloud session; use REST). Whether Google's Maven repository
+  (`dl.google.com`) and `services.gradle.org` can be reached depends on the environment's network policy:
+  open on 2026-11-25 (both answered), blocked in earlier sessions (the Gradle wrapper had to be generated
+  offline). Check with `curl` before assuming either. A cloud session cannot push tags, so releases are
+  started by hand in GitHub Actions (see "Release").
