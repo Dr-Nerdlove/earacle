@@ -55,6 +55,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +63,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.collectAsState
@@ -100,9 +102,11 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.ResolvedTextDirection
+import io.github.drnerdlove.earacle.lyrics.fillColour
 import io.github.drnerdlove.earacle.lyrics.filledEndIndex
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -161,7 +165,7 @@ class MainActivity : ComponentActivity() {
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
                 onDispose {}
             }
-            EaracleTheme(forceDark = stageLook) {
+            EaracleTheme(forceDark = stageLook, background = if (stageLook) Color.Black else null) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     containerColor = if (stageLook) Color.Black else MaterialTheme.colorScheme.background,
@@ -174,7 +178,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EaracleTheme(forceDark: Boolean = false, content: @Composable () -> Unit) {
+fun EaracleTheme(forceDark: Boolean = false, background: Color? = null, content: @Composable () -> Unit) {
     val darkTheme = isSystemInDarkTheme() || forceDark
     val colorScheme = when {
         Build.VERSION.SDK_INT >= 31 -> {
@@ -184,8 +188,23 @@ fun EaracleTheme(forceDark: Boolean = false, content: @Composable () -> Unit) {
         darkTheme -> darkColorScheme()
         else -> lightColorScheme()
     }
-    MaterialTheme(colorScheme = colorScheme, content = content)
+    // The fill of the sung part is computed once per colour scheme; the muted colour stays as it is.
+    val fill = remember(colorScheme, background) {
+        Color(
+            fillColour(
+                primary = colorScheme.primary.toArgb(),
+                muted = colorScheme.onSurfaceVariant.toArgb(),
+                background = (background ?: colorScheme.background).toArgb(),
+            ),
+        )
+    }
+    CompositionLocalProvider(LocalLyricFill provides fill) {
+        MaterialTheme(colorScheme = colorScheme, content = content)
+    }
 }
+
+/** The colour of the sung part of the lyrics and of the countdown dots: `primary`, made stronger where it hardly differs from the muted text. */
+val LocalLyricFill = staticCompositionLocalOf { Color.Unspecified }
 
 @Composable
 fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
@@ -635,7 +654,7 @@ private fun ColumnScope.SyncedLyrics(
                             style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isCurrent) FontWeight.Bold else null,
                             color = when {
-                                isCurrent -> MaterialTheme.colorScheme.primary
+                                isCurrent -> LocalLyricFill.current
                                 // The next line to sing is already a little brighter during the countdown.
                                 pause != null && index == pause.nextIndex -> MaterialTheme.colorScheme.onSurface
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -697,7 +716,7 @@ private fun FillingLine(
         text = text,
         style = style,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        color = LocalLyricFill.current,
         textAlign = TextAlign.Center,
         onTextLayout = { layout = it },
         modifier = Modifier
@@ -776,7 +795,7 @@ private fun CountdownDots(lines: List<LyricLine>, positionAt: (Long) -> Long, do
             withFrameMillis { frameTime = SystemClock.elapsedRealtime() }
         }
     }
-    val lit = MaterialTheme.colorScheme.primary
+    val lit = LocalLyricFill.current
     val out = lit.copy(alpha = 0.2f)
     val gap = dot
     Box(

@@ -35,6 +35,7 @@ the screen off) is not planned.
 - The line being sung fills up from left to right in the highlight colour, at the pace it is sung (estimated
   from its length); wrapped lines fill one visual line after the other. Where the lyrics carry word times
   (LRCLIB's lyricsfile or enhanced LRC), it jumps word by word on the real times, and line ends are real too; no time tags are ever shown as text
+- The filled part always stands out from the grey text: where the theme's highlight colour is too close to the grey (some wallpapers in Material You), a stronger colour of the same hue is used; the grey text is unchanged
 - Backing vocals (text in parentheses) are shown smaller and muted, so the lead line is easy to follow
 - Stage mode for singing along from a distance (button at the left of the sync button): black background, the
   current line very large in the middle, the next one smaller below it, everything else hidden; `A−` / `A+`

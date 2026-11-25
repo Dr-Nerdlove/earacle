@@ -568,6 +568,15 @@ the lightness towards `muted` instead of away.
 scheme, stage mode; a song with word times and one without; the not-yet-sung text must look exactly as
 before.
 
+**Built (2026-11-25):** `lyrics/FillColour.kt` as planned. Differences from the plan: lightness may move in either
+direction (the plan said only away from `muted`), because with the owner's palette (fill #F9B6AC, muted #BCA6A3,
+background #130D0B, difference 21.1) a lighter fill cannot reach 35 inside the screen's colours, while a more
+saturated one with a little less lightness does: the result is #FE9789 (difference 35.6, contrast 9.2:1, same hue).
+The search tries every lightness and chroma step, takes the nearest colour that reaches 35 with 4.5:1, and the
+closest one if none does. The fill is provided as `LocalLyricFill` from `EaracleTheme` (black background in stage
+mode). Tests in `FillColourTest` include the owner's measured palette as a test case (the screenshot itself is not
+in the repository because it shows copyrighted lyrics). Still open: 35 is a first guess, to be tuned on the phone.
+
 ## After the points
 
 Releases (points 1-3 were `v0.5.0`, points 4-6 `v0.6.0`) are the owner's decision; the steps are in
