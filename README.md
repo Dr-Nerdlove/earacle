@@ -41,6 +41,9 @@ the screen off) is not planned.
   change the text size, the timing buttons and "Try again" stay within reach. Works in portrait and landscape;
   the mode and the size are remembered after closing the app
 - Shows plain lyrics, or a clear message, when no synced lyrics exist
+- "Search song": when Shazam does not know a song (or is down), search LRCLIB by title and/or artist and pick an
+  entry. Tap the line being sung to start the clock there; from then on everything works as for a recognized
+  song, except that the app does not listen along
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
   recordings in a row without a match
 - Interface in German and English

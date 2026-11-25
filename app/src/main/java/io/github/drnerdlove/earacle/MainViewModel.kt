@@ -6,17 +6,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.drnerdlove.earacle.audio.MicrophoneException
 import io.github.drnerdlove.earacle.audio.MicrophoneRecorder
+import io.github.drnerdlove.earacle.lyrics.LrclibApi
+import io.github.drnerdlove.earacle.lyrics.LrclibTrack
 import io.github.drnerdlove.earacle.lyrics.Lyrics
+import io.github.drnerdlove.earacle.lyrics.LyricsSearch
 import io.github.drnerdlove.earacle.lyrics.StageSettings
 import io.github.drnerdlove.earacle.lyrics.StageStore
 import io.github.drnerdlove.earacle.lyrics.SyncShift
 import io.github.drnerdlove.earacle.lyrics.LrclibClient
 import io.github.drnerdlove.earacle.lyrics.LyricsProvider
-import io.github.drnerdlove.earacle.lyrics.isTapInRange
+import io.github.drnerdlove.earacle.lyrics.listensAlong
 import io.github.drnerdlove.earacle.lyrics.nudgedShift
-import io.github.drnerdlove.earacle.lyrics.shiftForTap
+import io.github.drnerdlove.earacle.lyrics.searchResultsForPicker
+import io.github.drnerdlove.earacle.lyrics.tapResult
 import io.github.drnerdlove.earacle.lyrics.songDurationSeconds
-import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.recognition.FailureReason
 import io.github.drnerdlove.earacle.recognition.RecognitionResult
 import io.github.drnerdlove.earacle.recognition.ShazamRecognizer
@@ -51,20 +54,100 @@ sealed interface UiState {
          * to the song: the same song keeps it, a new Found state starts at 0.
          */
         val shiftMs: Long = 0,
+        /**
+         * True for a song the user picked in the search (no recognition): listening along does not run, and
+         * every tap on a line sets the clock.
+         */
+        val byHand: Boolean = false,
+        /**
+         * False for a song picked by hand until the first tap on a line: nobody knows where in the song the
+         * music is yet, so nothing is highlighted. Always true for a recognized song.
+         */
+        val clockRunning: Boolean = true,
     ) : UiState
     data object NotFound : UiState
     data class Error(val kind: ErrorKind) : UiState
     data object PermissionDenied : UiState
 }
 
+/** The search screen (point 7). It lives next to [UiState], so a running recognition or listening along is not disturbed. */
+data class SearchState(
+    val query: String,
+    /** Null until a search has finished; empty when nothing was found. */
+    val results: List<LrclibTrack>? = null,
+    val loading: Boolean = false,
+    /** The last search failed (no connection or an unusable answer). */
+    val failed: Boolean = false,
+)
+
 class MainViewModel(
     private val recognizer: SongRecognizer = ShazamRecognizer(),
     private val lyricsProvider: LyricsProvider = LrclibClient(),
+    private val lyricsSearch: LyricsSearch = LrclibClient(),
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Idle)
     val state: StateFlow<UiState> = _state.asStateFlow()
     private var job: Job? = null
     private var trackingJob: Job? = null
+    private var searchJob: Job? = null
+
+    private val _search = MutableStateFlow<SearchState?>(null)
+
+    /** The search screen while it is open, else null. */
+    val search: StateFlow<SearchState?> = _search.asStateFlow()
+
+    /** Opens the search screen; [prefill] is the text of the field (the recognized title and artist, if any). */
+    fun openSearch(prefill: String = "") {
+        searchJob?.cancel()
+        _search.value = SearchState(prefill)
+    }
+
+    fun setSearchQuery(query: String) {
+        _search.update { it?.copy(query = query) }
+    }
+
+    fun closeSearch() {
+        searchJob?.cancel()
+        _search.value = null
+    }
+
+    /** Searches LRCLIB for the text in the field; a blank field does nothing. */
+    fun searchSongs() {
+        val query = _search.value?.query?.trim().orEmpty()
+        if (query.isEmpty()) return
+        searchJob?.cancel()
+        _search.update { it?.copy(loading = true, failed = false, results = null) }
+        searchJob = viewModelScope.launch {
+            val found = lyricsSearch.search(query)
+            _search.update {
+                it?.copy(loading = false, failed = found == null, results = found?.let(::searchResultsForPicker))
+            }
+        }
+    }
+
+    /**
+     * Opens the lyrics of a picked entry without a second lookup. The clock does not run until the first tap on a
+     * line; listening along stops (it only belongs to recognized songs).
+     */
+    fun pickResult(track: LrclibTrack) {
+        searchJob?.cancel()
+        trackingJob?.cancel()
+        val match = RecognitionResult.Match(
+            title = track.trackName,
+            artist = track.artistName,
+            offsetSeconds = 0.0,
+            shazamKey = null,
+            coverArtUrl = null,
+        )
+        _state.value = UiState.Found(
+            match,
+            recordingStartedAtElapsedMs = SystemClock.elapsedRealtime(),
+            lyrics = LrclibApi.toLyrics(track),
+            byHand = true,
+            clockRunning = false,
+        )
+        _search.value = null
+    }
 
     /** The microphone is silenced in the background (Android 11+), so listening along waits for the app to show. */
     private val appVisible = MutableStateFlow(false)
@@ -126,7 +209,7 @@ class MainViewModel(
                 }
                 (_state.value as? UiState.Found)?.let {
                     loadLyrics(it.match)
-                    startTracking()
+                    if (listensAlong(it.byHand)) startTracking()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -139,17 +222,28 @@ class MainViewModel(
     }
 
     /**
-     * The user tapped the lyric line starting at [lineTimeMs]: it is being sung right now, so the shift
-     * is set to make it the current line. Returns false (and changes nothing) for a line too far away.
+     * The user tapped the lyric line starting at [lineTimeMs]: it is being sung right now. In a recognized song
+     * the shift is set to make it the current line (false and no change for a line too far away); in a song
+     * picked by hand the clock starts at that line. See [tapResult].
      */
     fun tapLine(lineTimeMs: Long): Boolean {
         var accepted = false
         _state.update { current ->
             if (current !is UiState.Found) return@update current
             val raw = rawPositionMs(current)
-            if (!isTapInRange(lineTimeMs, syncedPositionMs(raw, current.shiftMs))) return@update current
+            val result = tapResult(current.byHand, lineTimeMs, raw, current.shiftMs) ?: return@update current
             accepted = true
-            current.copy(shiftMs = shiftForTap(lineTimeMs, raw))
+            val anchor = result.anchorMs
+            if (anchor == null) {
+                current.copy(shiftMs = result.shiftMs)
+            } else {
+                current.copy(
+                    match = current.match.copy(offsetSeconds = anchor / 1000.0),
+                    recordingStartedAtElapsedMs = SystemClock.elapsedRealtime(),
+                    shiftMs = result.shiftMs,
+                    clockRunning = true,
+                )
+            }
         }
         return accepted
     }
@@ -196,6 +290,7 @@ class MainViewModel(
         var rateLimited = false
         while (true) {
             val found = _state.value as? UiState.Found ?: return
+            if (!listensAlong(found.byHand)) return
             val position = positionSeconds(
                 found.match.offsetSeconds,
                 found.recordingStartedAtElapsedMs,

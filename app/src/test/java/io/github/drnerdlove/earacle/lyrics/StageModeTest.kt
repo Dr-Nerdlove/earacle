@@ -65,6 +65,9 @@ class StageModeTest {
         assertFalse(showsStageMode(true, Lyrics.NotFound))
         assertFalse(showsStageMode(true, Lyrics.Instrumental))
         assertFalse(showsStageMode(true, Lyrics.Failure))
+        // A song picked by hand stays on the normal screen until its clock runs (its lines have to be tapped).
+        assertFalse(showsStageMode(true, synced, clockRunning = false))
+        assertTrue(showsStageMode(true, synced, clockRunning = true))
     }
 
     private val lines = listOf(

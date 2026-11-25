@@ -26,4 +26,15 @@
     <string name="stage_exit">Bühnenmodus verlassen</string>
     <string name="stage_text_smaller">Schrift kleiner machen</string>
     <string name="stage_text_larger">Schrift größer machen</string>
+    <string name="search_open">Song suchen</string>
+    <string name="search_back">Zurück</string>
+    <string name="search_field_label">Titel und/oder Interpret</string>
+    <string name="search_go">Suchen</string>
+    <string name="search_hint">Gib einen Titel, einen Interpreten oder beides ein und wähle dann das Lied aus, um mit dem Text mitzusingen.</string>
+    <string name="search_empty">Nichts gefunden. Versuche andere Wörter.</string>
+    <string name="search_error">Die Suche hat nicht geklappt. Prüfe deine Internetverbindung und versuche es nochmal.</string>
+    <string name="search_kind_synced">Text mit Zeiten</string>
+    <string name="search_kind_plain">Text ohne Zeiten</string>
+    <string name="search_kind_instrumental">Instrumental</string>
+    <string name="picked_tap_hint">Tippe auf die Zeile, die gerade gesungen wird.</string>
 </resources>

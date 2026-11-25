@@ -27,4 +27,15 @@
     <string name="stage_exit">Leave stage mode</string>
     <string name="stage_text_smaller">Make the text smaller</string>
     <string name="stage_text_larger">Make the text larger</string>
+    <string name="search_open">Search song</string>
+    <string name="search_back">Back</string>
+    <string name="search_field_label">Title and/or artist</string>
+    <string name="search_go">Search</string>
+    <string name="search_hint">Type a title, an artist or both, then pick the song to sing along with its lyrics.</string>
+    <string name="search_empty">Nothing found. Try other words.</string>
+    <string name="search_error">The search did not work. Check your internet connection and try again.</string>
+    <string name="search_kind_synced">Lyrics with timing</string>
+    <string name="search_kind_plain">Lyrics without timing</string>
+    <string name="search_kind_instrumental">Instrumental</string>
+    <string name="picked_tap_hint">Tap the line that is being sung right now.</string>
 </resources>

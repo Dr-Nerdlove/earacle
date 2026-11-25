@@ -19,6 +19,9 @@ data class LrclibTrack(
     val lyricsfile: String? = null,
     /** LRCLIB's flag that the lyricsfile has word times. */
     val hasWordSync: Boolean = false,
+    /** LRCLIB's id of the entry; only shown in lists of results, never needed to fetch lyrics. */
+    val id: Long? = null,
+    val albumName: String? = null,
 )
 
 /** Pure helpers for the LRCLIB API (no network access here). */
@@ -36,6 +39,13 @@ object LrclibApi {
     fun buildFreeSearchUrl(title: String, artist: String): String =
         "$BASE_URL/api/search?q=${enc("$artist $title")}"
 
+    /**
+     * The URL of LRCLIB's free search for what the user typed in the search screen (all words must appear in title,
+     * artist or album), or null when [query] is blank: nothing is requested then.
+     */
+    fun buildQueryUrl(query: String): String? =
+        query.trim().takeIf { it.isNotEmpty() }?.let { "$BASE_URL/api/search?q=${enc(it)}" }
+
     /** Returns null when [body] is not a JSON array of tracks. */
     fun parseSearchResults(body: String): List<LrclibTrack>? = try {
         val array = JSONArray(body)
@@ -50,6 +60,8 @@ object LrclibApi {
                 syncedLyrics = textOrNull(o, "syncedLyrics"),
                 lyricsfile = textOrNull(o, "lyricsfile"),
                 hasWordSync = o.optBoolean("hasWordSync", false),
+                id = if (o.has("id") && !o.isNull("id")) o.optLong("id") else null,
+                albumName = textOrNull(o, "albumName"),
             )
         }
     } catch (e: JSONException) {

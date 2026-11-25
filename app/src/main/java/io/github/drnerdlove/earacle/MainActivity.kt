@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -77,7 +78,8 @@ import io.github.drnerdlove.earacle.lyrics.formatShift
 import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.lyrics.Lyrics
 import io.github.drnerdlove.earacle.lyrics.countdown
-import io.github.drnerdlove.earacle.lyrics.currentLineIndex
+import io.github.drnerdlove.earacle.lyrics.highlightedLineIndex
+import io.github.drnerdlove.earacle.lyrics.searchPrefill
 import io.github.drnerdlove.earacle.lyrics.displayTitle
 import io.github.drnerdlove.earacle.lyrics.songDurationSeconds
 import io.github.drnerdlove.earacle.recognition.SongTracking
@@ -142,7 +144,7 @@ class MainActivity : ComponentActivity() {
             val stage by viewModel.stage.collectAsState()
             // Stage mode is always dark, whatever the system theme says, also while "Try again" listens.
             val stageLook = stage.enabled && when (val current = state) {
-                is UiState.Found -> showsStageMode(true, current.lyrics)
+                is UiState.Found -> showsStageMode(true, current.lyrics, current.clockRunning)
                 is UiState.Listening, UiState.Recognizing -> true
                 else -> false
             }
@@ -186,6 +188,7 @@ fun EaracleTheme(forceDark: Boolean = false, content: @Composable () -> Unit) {
 fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
     val stage by viewModel.stage.collectAsState()
+    val search by viewModel.search.collectAsState()
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -209,10 +212,28 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
+    val searching = search
+    if (searching != null) {
+        // The system back gesture leaves the search and returns to the screen before it.
+        BackHandler(onBack = viewModel::closeSearch)
+        SearchScreen(
+            state = searching,
+            onQueryChange = viewModel::setSearchQuery,
+            onSearch = viewModel::searchSongs,
+            onPick = viewModel::pickResult,
+            onBack = viewModel::closeSearch,
+            modifier = modifier,
+        )
+        return
+    }
     MainContent(
         state,
         onRecognize,
         modifier,
+        onSearch = {
+            val shown = state as? UiState.Found
+            viewModel.openSearch(shown?.let { searchPrefill(it.match.title, it.match.artist) }.orEmpty())
+        },
         onTapLine = { viewModel.tapLine(it) },
         onNudge = viewModel::nudgeShift,
         onResetShift = viewModel::resetShift,
@@ -229,6 +250,8 @@ fun MainContent(
     modifier: Modifier = Modifier,
     /** A lyric line was tapped as "being sung now"; returns whether the tap counted. */
     onTapLine: (Long) -> Boolean = { false },
+    /** "Search song" was pressed: opens the search by hand. */
+    onSearch: () -> Unit = {},
     onNudge: (Long) -> Unit = {},
     onResetShift: () -> Unit = {},
     stage: StageSettings = StageSettings(),
@@ -240,7 +263,7 @@ fun MainContent(
     val retry = state is UiState.NotFound || state is UiState.Error ||
         state is UiState.PermissionDenied || state is UiState.Found
     val buttonLabel = stringResource(if (retry) R.string.button_try_again else R.string.button_recognize)
-    if (state is UiState.Found && showsStageMode(stage.enabled, state.lyrics)) {
+    if (state is UiState.Found && showsStageMode(stage.enabled, state.lyrics, state.clockRunning)) {
         StageContent(
             state,
             stage,
@@ -283,7 +306,7 @@ fun MainContent(
                     enabled = !busy,
                     modifier = Modifier.align(Alignment.Center),
                 ) { Text(buttonLabel) }
-                if (syncedLines != null) {
+                if (syncedLines != null && state.clockRunning) {
                     // Stage mode: very large lyrics for singing along from a distance.
                     FilledTonalIconButton(
                         onClick = { onStageChange(true) },
@@ -313,6 +336,10 @@ fun MainContent(
                     }
                 }
             }
+            // Without synced lyrics a better version can be searched by hand (not while they are still loading).
+            if (state.lyrics != null && state.lyrics !is Lyrics.Synced) {
+                TextButton(onClick = onSearch) { Text(stringResource(R.string.search_open)) }
+            }
         }
         return
     }
@@ -331,6 +358,9 @@ fun MainContent(
         StatusArea(state)
         Spacer(Modifier.height(32.dp))
         Button(onClick = onRecognize, enabled = !busy) { Text(buttonLabel) }
+        if (!busy) {
+            TextButton(onClick = onSearch) { Text(stringResource(R.string.search_open)) }
+        }
     }
 }
 
@@ -424,10 +454,20 @@ private fun ColumnScope.FoundContent(
         overflow = TextOverflow.Ellipsis,
     )
     Spacer(Modifier.height(4.dp))
-    Text(
-        stringResource(R.string.position_in_song, position),
-        style = MaterialTheme.typography.bodyMedium,
-    )
+    if (state.clockRunning) {
+        Text(
+            stringResource(R.string.position_in_song, position),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    } else if (state.lyrics is Lyrics.Synced) {
+        // A song picked by hand: the clock starts with the first tap on a line.
+        Text(
+            stringResource(R.string.picked_tap_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
+        )
+    }
     if (state.relistening) {
         Text(
             stringResource(R.string.status_relistening),
@@ -435,17 +475,18 @@ private fun ColumnScope.FoundContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    if (state.lyrics is Lyrics.Synced) {
+    if (state.lyrics is Lyrics.Synced && state.clockRunning) {
         ShiftRow(state.shiftMs, onNudge, onResetShift)
     }
     Spacer(Modifier.height(8.dp))
-    LyricsArea(state.lyrics, positionMs, positionAt, following, onScrolledByHand, onTapLine)
+    LyricsArea(state.lyrics, positionMs, state.clockRunning, positionAt, following, onScrolledByHand, onTapLine)
 }
 
 @Composable
 private fun ColumnScope.LyricsArea(
     lyrics: Lyrics?,
     positionMs: Long,
+    clockRunning: Boolean,
     positionAt: (Long) -> Long,
     following: Boolean,
     onScrolledByHand: () -> Unit,
@@ -457,7 +498,7 @@ private fun ColumnScope.LyricsArea(
         Lyrics.Instrumental -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_instrumental)) }
         Lyrics.Failure -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_error)) }
         is Lyrics.Plain -> PlainLyrics(lyrics.text)
-        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, positionAt, following, onScrolledByHand, onTapLine)
+        is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, clockRunning, positionAt, following, onScrolledByHand, onTapLine)
     }
 }
 
@@ -475,14 +516,16 @@ private fun ColumnScope.CenteredInRemainingSpace(content: @Composable () -> Unit
 private fun ColumnScope.SyncedLyrics(
     lines: List<LyricLine>,
     positionMs: Long,
+    clockRunning: Boolean,
     positionAt: (Long) -> Long,
     following: Boolean,
     onScrolledByHand: () -> Unit,
     onTapLine: (Long) -> Unit,
 ) {
-    val current = currentLineIndex(lines, positionMs)
+    // A song picked by hand highlights nothing and counts down nothing until its first tapped line.
+    val current = highlightedLineIndex(lines, positionMs, clockRunning)
     // Set during a long pause before the next line: it gets the countdown dots and a brighter preview.
-    val pause = countdown(lines, positionMs)
+    val pause = if (clockRunning) countdown(lines, positionMs) else null
     // The dots stand at the line being sung, or above the first line before it starts.
     val dotsHost = maxOf(current, 0)
     val listState = rememberLazyListState()
@@ -938,7 +981,7 @@ private fun ColumnScope.PlainLyrics(text: String) {
 }
 
 @Composable
-private fun Hint(text: String) {
+internal fun Hint(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,

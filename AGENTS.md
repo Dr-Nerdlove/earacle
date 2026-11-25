@@ -294,6 +294,13 @@ repository belongs to someone else, these points still apply unless "Project kno
     black, always dark theme; current line 32-64 sp (5 steps, `A−` / `A+`), next line at 0.6 of it, other lines
     hidden; on and size are in `MainViewModel.stage` (survives rotation) and saved in SharedPreferences. Only for
     songs with synced lyrics. Unit-tested (size steps, which lines show); the screen itself is only compile-checked by CI, not yet seen on a phone.
+  - Search by hand (built, point 7, `lyrics/ManualSong.kt`, `SearchScreen.kt`, `MainViewModel.search`): a
+    "Search song" button on the start, not-recognized, error and no-synced-lyrics screens opens a search field;
+    LRCLIB's `/api/search?q=` answers, entries with synced lyrics first, entries without any lyrics left out.
+    A picked song is `UiState.Found(byHand = true, clockRunning = false)`: nothing is highlighted until the first
+    tap on a line, which starts the clock there (every tap of a picked song sets the clock, no 30 s limit);
+    listening along does not run for it. The search state is separate from `UiState` (see `docs/karaoke-plan.md`).
+    Checked by tests only (logic), not yet on a phone.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
