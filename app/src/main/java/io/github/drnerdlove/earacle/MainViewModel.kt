@@ -6,6 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.drnerdlove.earacle.audio.MicrophoneException
 import io.github.drnerdlove.earacle.audio.MicrophoneRecorder
+import io.github.drnerdlove.earacle.history.HistoryEntry
+import io.github.drnerdlove.earacle.history.HistoryLog
+import io.github.drnerdlove.earacle.history.HistoryStore
+import io.github.drnerdlove.earacle.history.SongHistory
 import io.github.drnerdlove.earacle.lyrics.LrclibApi
 import io.github.drnerdlove.earacle.lyrics.LrclibTrack
 import io.github.drnerdlove.earacle.lyrics.Lyrics
@@ -16,6 +20,7 @@ import io.github.drnerdlove.earacle.lyrics.SyncShift
 import io.github.drnerdlove.earacle.lyrics.LrclibClient
 import io.github.drnerdlove.earacle.lyrics.LyricsProvider
 import io.github.drnerdlove.earacle.lyrics.listensAlong
+import io.github.drnerdlove.earacle.lyrics.lrclibId
 import io.github.drnerdlove.earacle.lyrics.nudgedShift
 import io.github.drnerdlove.earacle.lyrics.searchResultsForPicker
 import io.github.drnerdlove.earacle.lyrics.tapResult
@@ -27,6 +32,7 @@ import io.github.drnerdlove.earacle.recognition.SongRecognizer
 import io.github.drnerdlove.earacle.recognition.SongTracking
 import io.github.drnerdlove.earacle.recognition.positionSeconds
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +40,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 enum class ErrorKind { MICROPHONE, NETWORK, RATE_LIMITED, SERVER }
 
@@ -139,14 +147,119 @@ class MainViewModel(
             shazamKey = null,
             coverArtUrl = null,
         )
+        val lyrics = LrclibApi.toLyrics(track)
         _state.value = UiState.Found(
             match,
             recordingStartedAtElapsedMs = SystemClock.elapsedRealtime(),
-            lyrics = LrclibApi.toLyrics(track),
+            lyrics = lyrics,
             byHand = true,
             clockRunning = false,
         )
         _search.value = null
+        _historyOpen.value = false
+        recordInHistory(match, byHand = true, lyrics)
+    }
+
+    // --- History (point 8) ---
+
+    private var historyLog: HistoryLog? = null
+
+    /** All file access of the history runs here, one call after the other, off the main thread. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val historyDispatcher = Dispatchers.IO.limitedParallelism(1)
+
+    private val _history = MutableStateFlow(SongHistory())
+
+    /** The history, oldest first (the history page lists it the other way round). */
+    val history: StateFlow<SongHistory> = _history.asStateFlow()
+
+    private val _historyOpen = MutableStateFlow(false)
+
+    /** True while the history page is shown. It lies over the search and the lyrics screen, which stay as they are. */
+    val historyOpen: StateFlow<Boolean> = _historyOpen.asStateFlow()
+
+    /** Loads the history from [store] once; later calls (after a rotation) change nothing. */
+    fun attachHistoryStore(store: HistoryStore) {
+        if (historyLog != null) return
+        val log = HistoryLog(store)
+        historyLog = log
+        viewModelScope.launch(historyDispatcher) { _history.value = log.load() }
+    }
+
+    fun openHistory() {
+        _historyOpen.value = true
+    }
+
+    fun closeHistory() {
+        _historyOpen.value = false
+    }
+
+    /**
+     * Adds the song to the history unless it is the same as the newest entry heard a moment ago. Called once the
+     * lyrics lookup has finished, so the entry can carry the LRCLIB id; [timeMs] is when the song was heard.
+     */
+    private fun recordInHistory(
+        match: RecognitionResult.Match,
+        byHand: Boolean,
+        lyrics: Lyrics?,
+        timeMs: Long = System.currentTimeMillis(),
+    ) {
+        val log = historyLog ?: return
+        val entry = HistoryEntry(UUID.randomUUID().toString(), timeMs, match.title, match.artist, byHand, lyrics.lrclibId)
+        viewModelScope.launch(historyDispatcher) {
+            if (log.record(entry)) _history.value = log.history
+        }
+    }
+
+    fun deleteHistoryEntry(id: String) {
+        val log = historyLog ?: return
+        viewModelScope.launch(historyDispatcher) {
+            log.delete(id)
+            _history.value = log.history
+        }
+    }
+
+    /** Puts the entry deleted last back where it was. */
+    fun undoHistoryDelete() {
+        val log = historyLog ?: return
+        viewModelScope.launch(historyDispatcher) {
+            log.undoDelete()
+            _history.value = log.history
+        }
+    }
+
+    fun clearHistory() {
+        val log = historyLog ?: return
+        viewModelScope.launch(historyDispatcher) {
+            log.clear()
+            _history.value = log.history
+        }
+    }
+
+    /**
+     * Opens a song of the history like one picked by hand: nothing is highlighted until the first tap on a line. The
+     * lyrics are exactly the version of the entry when it has an LRCLIB id, else the normal lookup by title and
+     * artist runs. This adds no new entry.
+     */
+    fun openFromHistory(entry: HistoryEntry) {
+        searchJob?.cancel()
+        trackingJob?.cancel()
+        val match = RecognitionResult.Match(
+            title = entry.title,
+            artist = entry.artist,
+            offsetSeconds = 0.0,
+            shazamKey = null,
+            coverArtUrl = null,
+        )
+        _state.value = UiState.Found(
+            match,
+            recordingStartedAtElapsedMs = SystemClock.elapsedRealtime(),
+            byHand = true,
+            clockRunning = false,
+        )
+        _search.value = null
+        _historyOpen.value = false
+        loadLyrics(match, lrclibId = entry.lrclibId, recordAtMs = null)
     }
 
     /** The microphone is silenced in the background (Android 11+), so listening along waits for the app to show. */
@@ -208,7 +321,7 @@ class MainViewModel(
                     is RecognitionResult.Failure -> UiState.Error(errorKind(result.reason))
                 }
                 (_state.value as? UiState.Found)?.let {
-                    loadLyrics(it.match)
+                    loadLyrics(it.match, recordAtMs = System.currentTimeMillis())
                     if (listensAlong(it.byHand)) startTracking()
                 }
             } catch (e: CancellationException) {
@@ -342,7 +455,7 @@ class MainViewModel(
                     }
                     if (changed) {
                         confirmations = 0
-                        loadLyrics(answer)
+                        loadLyrics(answer, recordAtMs = System.currentTimeMillis())
                     } else {
                         confirmations++
                     }
@@ -367,11 +480,12 @@ class MainViewModel(
     /**
      * Looks up the lyrics in the background and adds them to the current [UiState.Found] if it still
      * shows the same song and has no lyrics yet. Other changes to it (position, relistening flag)
-     * do not matter; a newer state for another song is left alone.
+     * do not matter; a newer state for another song is left alone. With a [lrclibId] exactly that version is
+     * loaded first. With a [recordAtMs] (when the song was heard) the song is added to the history afterwards, also when the screen has moved on.
      */
-    private fun loadLyrics(match: RecognitionResult.Match) {
+    private fun loadLyrics(match: RecognitionResult.Match, lrclibId: Long? = null, recordAtMs: Long?) {
         viewModelScope.launch {
-            val lyrics = lyricsProvider.find(match.title, match.artist)
+            val lyrics = lrclibId?.let { lyricsProvider.findById(it) } ?: lyricsProvider.find(match.title, match.artist)
             _state.update { current ->
                 if (current is UiState.Found && current.lyrics == null && SongTracking.isSameSong(current.match, match)) {
                     current.copy(lyrics = lyrics)
@@ -379,6 +493,7 @@ class MainViewModel(
                     current
                 }
             }
+            if (recordAtMs != null) recordInHistory(match, byHand = false, lyrics, recordAtMs)
         }
     }
 }

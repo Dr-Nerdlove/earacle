@@ -25,6 +25,14 @@ class LrclibClient : LyricsProvider, LyricsSearch {
         }
     }
 
+    override suspend fun findById(id: Long): Lyrics? = withContext(Dispatchers.IO) {
+        try {
+            get(LrclibApi.buildGetUrl(id))?.let { LrclibApi.parseTrackAnswer(it) }?.let { LrclibApi.toLyrics(it) }
+        } catch (e: IOException) {
+            null
+        }
+    }
+
     override suspend fun search(query: String): List<LrclibTrack>? = withContext(Dispatchers.IO) {
         val url = LrclibApi.buildQueryUrl(query) ?: return@withContext emptyList()
         try {

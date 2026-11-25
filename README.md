@@ -44,6 +44,12 @@ the screen off) is not planned.
 - "Search song": when Shazam does not know a song (or is down), search LRCLIB by title and/or artist and pick an
   entry. Tap the line being sung to start the clock there; from then on everything works as for a recognized
   song, except that the app does not listen along
+- Song history: every recognized song and every song picked by hand is listed on a page of its own ("History"
+  button on the start screen, clock button next to "Try again"), newest first, grouped by day, with the time.
+  Tap an entry to open its lyrics again (exactly the version that was shown, then tap the line being sung);
+  swipe an entry to the side to delete it (with "Undo"), or clear everything. The search screen shows the last 5
+  songs while its field is empty. The history stays on the phone, without a limit, and is included in Android's
+  own backup of the app
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
   recordings in a row without a match
 - Interface in German and English

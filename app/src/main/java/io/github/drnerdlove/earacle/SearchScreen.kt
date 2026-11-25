@@ -25,8 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import io.github.drnerdlove.earacle.history.HistoryEntry
 import io.github.drnerdlove.earacle.lyrics.LrclibTrack
 import io.github.drnerdlove.earacle.lyrics.PickerKind
+import io.github.drnerdlove.earacle.lyrics.displayTitle
 import io.github.drnerdlove.earacle.lyrics.pickerKind
 import io.github.drnerdlove.earacle.recognition.formatPosition
 
@@ -41,6 +43,10 @@ fun SearchScreen(
     onSearch: () -> Unit,
     onPick: (LrclibTrack) -> Unit,
     onBack: () -> Unit,
+    /** The newest songs of the history (at most [RECENT_COUNT]), shown while the field is empty. */
+    recent: List<HistoryEntry> = emptyList(),
+    onPickRecent: (HistoryEntry) -> Unit = {},
+    onShowAllHistory: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -68,6 +74,7 @@ fun SearchScreen(
         Spacer(Modifier.height(16.dp))
         val results = state.results
         when {
+            state.query.isBlank() && recent.isNotEmpty() -> RecentSongs(recent, onPickRecent, onShowAllHistory)
             state.loading -> CenteredBox { CircularProgressIndicator() }
             state.failed -> CenteredBox { Hint(stringResource(R.string.search_error)) }
             results == null -> CenteredBox { Hint(stringResource(R.string.search_hint)) }
@@ -81,6 +88,46 @@ fun SearchScreen(
         }
     }
 }
+
+/** The last songs of the history, with a way to the whole history (point 8). */
+@Composable
+private fun RecentSongs(recent: List<HistoryEntry>, onPick: (HistoryEntry) -> Unit, onShowAll: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(R.string.history_recent),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            items(recent, key = { it.id }) { entry ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onPick(entry) }
+                        .padding(vertical = 8.dp),
+                ) {
+                    Text(displayTitle(entry.title), style = MaterialTheme.typography.titleMedium)
+                    if (entry.artist.isNotBlank()) {
+                        Text(
+                            entry.artist,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            item {
+                TextButton(onClick = onShowAll) { Text(stringResource(R.string.history_show_all)) }
+            }
+        }
+    }
+}
+
+/** How many songs the search screen shows from the history while its field is empty. */
+const val RECENT_COUNT = 5
 
 @Composable
 private fun CenteredBox(content: @Composable () -> Unit) {

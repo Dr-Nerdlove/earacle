@@ -66,7 +66,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
+import io.github.drnerdlove.earacle.history.FileHistoryStore
 import io.github.drnerdlove.earacle.lyrics.CountdownTiming
+import java.io.File
 import io.github.drnerdlove.earacle.lyrics.LyricLine
 import io.github.drnerdlove.earacle.lyrics.StageSettings
 import io.github.drnerdlove.earacle.lyrics.StageText
@@ -135,6 +137,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel.attachStageStore(StagePreferences(this))
+        viewModel.attachHistoryStore(FileHistoryStore(File(filesDir, "history.jsonl")))
         enableEdgeToEdge()
         // Keep the screen on while the app is visible, so the lyrics stay readable. The flag
         // only applies while this window is shown; the system ignores it in the background.
@@ -189,6 +192,8 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
     val stage by viewModel.stage.collectAsState()
     val search by viewModel.search.collectAsState()
+    val historyOpen by viewModel.historyOpen.collectAsState()
+    val history by viewModel.history.collectAsState()
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -212,6 +217,20 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
+    if (historyOpen) {
+        // The system back gesture leaves the history; a search or lyrics screen below it is still there.
+        BackHandler(onBack = viewModel::closeHistory)
+        HistoryScreen(
+            entries = history.newestFirst(),
+            onOpen = viewModel::openFromHistory,
+            onDelete = viewModel::deleteHistoryEntry,
+            onUndoDelete = viewModel::undoHistoryDelete,
+            onClear = viewModel::clearHistory,
+            onBack = viewModel::closeHistory,
+            modifier = modifier,
+        )
+        return
+    }
     val searching = search
     if (searching != null) {
         // The system back gesture leaves the search and returns to the screen before it.
@@ -222,6 +241,9 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             onSearch = viewModel::searchSongs,
             onPick = viewModel::pickResult,
             onBack = viewModel::closeSearch,
+            recent = history.newestFirst().take(RECENT_COUNT),
+            onPickRecent = viewModel::openFromHistory,
+            onShowAllHistory = viewModel::openHistory,
             modifier = modifier,
         )
         return
@@ -234,6 +256,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             val shown = state as? UiState.Found
             viewModel.openSearch(shown?.let { searchPrefill(it.match.title, it.match.artist) }.orEmpty())
         },
+        onHistory = viewModel::openHistory,
         onTapLine = { viewModel.tapLine(it) },
         onNudge = viewModel::nudgeShift,
         onResetShift = viewModel::resetShift,
@@ -252,6 +275,8 @@ fun MainContent(
     onTapLine: (Long) -> Boolean = { false },
     /** "Search song" was pressed: opens the search by hand. */
     onSearch: () -> Unit = {},
+    /** The history button was pressed: opens the history page. */
+    onHistory: () -> Unit = {},
     onNudge: (Long) -> Unit = {},
     onResetShift: () -> Unit = {},
     stage: StageSettings = StageSettings(),
@@ -306,19 +331,32 @@ fun MainContent(
                     enabled = !busy,
                     modifier = Modifier.align(Alignment.Center),
                 ) { Text(buttonLabel) }
-                if (syncedLines != null && state.clockRunning) {
-                    // Stage mode: very large lyrics for singing along from a distance.
+                Row(
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     FilledTonalIconButton(
-                        onClick = { onStageChange(true) },
+                        onClick = onHistory,
                         shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .size(ButtonDefaults.MinHeight),
+                        modifier = Modifier.size(ButtonDefaults.MinHeight),
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_fullscreen),
-                            contentDescription = stringResource(R.string.stage_enter),
+                            painter = painterResource(R.drawable.ic_history),
+                            contentDescription = stringResource(R.string.history_open),
                         )
+                    }
+                    if (syncedLines != null && state.clockRunning) {
+                        // Stage mode: very large lyrics for singing along from a distance.
+                        FilledTonalIconButton(
+                            onClick = { onStageChange(true) },
+                            shape = CircleShape,
+                            modifier = Modifier.size(ButtonDefaults.MinHeight),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_fullscreen),
+                                contentDescription = stringResource(R.string.stage_enter),
+                            )
+                        }
                     }
                 }
                 if (syncedLines != null && !following) {
@@ -360,6 +398,7 @@ fun MainContent(
         Button(onClick = onRecognize, enabled = !busy) { Text(buttonLabel) }
         if (!busy) {
             TextButton(onClick = onSearch) { Text(stringResource(R.string.search_open)) }
+            TextButton(onClick = onHistory) { Text(stringResource(R.string.history_open)) }
         }
     }
 }
