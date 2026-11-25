@@ -301,6 +301,14 @@ repository belongs to someone else, these points still apply unless "Project kno
     tap on a line, which starts the clock there (every tap of a picked song sets the clock, no 30 s limit);
     listening along does not run for it. The search state is separate from `UiState` (see `docs/karaoke-plan.md`).
     Checked by tests only (logic), not yet on a phone.
+  - Song history (built, point 8, package `history/`, `HistoryScreen.kt`): every recognized song (once its lyrics
+    lookup has finished, so the entry can carry LRCLIB's id) and every song picked by hand is appended to
+    `history.jsonl` in the app's files folder, one JSON object per line (`HistoryLine`, version `v` 1, org.json); a
+    broken, cut-off or unknown-version line is skipped, the rest stays. Same song as the newest entry and younger
+    than `SongHistory.SAME_SONG_GAP_MS` (10 min) is not added again. Opening an entry works like a song picked by
+    hand (nothing highlighted until the first tap) and loads exactly its LRCLIB version through `/api/get/{id}`,
+    else the normal lookup; it adds no entry. `allowBackup` stays true, so Android's backup includes the history.
+    Logic and file are unit-tested; the page, swipe and snackbar are only compile-checked, not yet on a phone.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen

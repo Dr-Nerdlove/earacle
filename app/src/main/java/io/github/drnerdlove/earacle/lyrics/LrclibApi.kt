@@ -19,7 +19,7 @@ data class LrclibTrack(
     val lyricsfile: String? = null,
     /** LRCLIB's flag that the lyricsfile has word times. */
     val hasWordSync: Boolean = false,
-    /** LRCLIB's id of the entry; only shown in lists of results, never needed to fetch lyrics. */
+    /** LRCLIB's id of the entry (kept in the history, to open exactly this version again). */
     val id: Long? = null,
     val albumName: String? = null,
 )
@@ -46,27 +46,36 @@ object LrclibApi {
     fun buildQueryUrl(query: String): String? =
         query.trim().takeIf { it.isNotEmpty() }?.let { "$BASE_URL/api/search?q=${enc(it)}" }
 
+    /** The URL of the one entry with LRCLIB id [id] (answers with the same fields as a search result). */
+    fun buildGetUrl(id: Long): String = "$BASE_URL/api/get/$id"
+
     /** Returns null when [body] is not a JSON array of tracks. */
     fun parseSearchResults(body: String): List<LrclibTrack>? = try {
         val array = JSONArray(body)
-        (0 until array.length()).mapNotNull { i ->
-            val o = array.optJSONObject(i) ?: return@mapNotNull null
-            LrclibTrack(
-                trackName = o.optString("trackName"),
-                artistName = o.optString("artistName"),
-                durationSeconds = o.optDouble("duration", 0.0),
-                instrumental = o.optBoolean("instrumental", false),
-                plainLyrics = textOrNull(o, "plainLyrics"),
-                syncedLyrics = textOrNull(o, "syncedLyrics"),
-                lyricsfile = textOrNull(o, "lyricsfile"),
-                hasWordSync = o.optBoolean("hasWordSync", false),
-                id = if (o.has("id") && !o.isNull("id")) o.optLong("id") else null,
-                albumName = textOrNull(o, "albumName"),
-            )
-        }
+        (0 until array.length()).mapNotNull { i -> array.optJSONObject(i)?.let(::parseTrack) }
     } catch (e: JSONException) {
         null
     }
+
+    /** Returns null when [body] is not a JSON object (the answer of [buildGetUrl]). */
+    fun parseTrackAnswer(body: String): LrclibTrack? = try {
+        parseTrack(JSONObject(body))
+    } catch (e: JSONException) {
+        null
+    }
+
+    private fun parseTrack(o: JSONObject) = LrclibTrack(
+        trackName = o.optString("trackName"),
+        artistName = o.optString("artistName"),
+        durationSeconds = o.optDouble("duration", 0.0),
+        instrumental = o.optBoolean("instrumental", false),
+        plainLyrics = textOrNull(o, "plainLyrics"),
+        syncedLyrics = textOrNull(o, "syncedLyrics"),
+        lyricsfile = textOrNull(o, "lyricsfile"),
+        hasWordSync = o.optBoolean("hasWordSync", false),
+        id = if (o.has("id") && !o.isNull("id")) o.optLong("id") else null,
+        albumName = textOrNull(o, "albumName"),
+    )
 
     /**
      * The text of [key], or null when it is missing, JSON null blank or the text "null". Needed because Android's
@@ -128,13 +137,13 @@ object LrclibApi {
         val duration = track.durationSeconds.takeIf { it > 0 }
         track.lyricsfile?.let { yaml ->
             val lines = Lyricsfile.parse(yaml)
-            if (lines != null) return Lyrics.Synced(lines, duration)
+            if (lines != null) return Lyrics.Synced(lines, duration, track.id)
         }
         track.syncedLyrics?.let { text ->
             val lines = Lrc.parse(text)
-            if (lines.isNotEmpty()) return Lyrics.Synced(lines, duration)
+            if (lines.isNotEmpty()) return Lyrics.Synced(lines, duration, track.id)
         }
-        track.plainLyrics?.let { return Lyrics.Plain(it.trim(), duration) }
+        track.plainLyrics?.let { return Lyrics.Plain(it.trim(), duration, track.id) }
         return if (track.instrumental) Lyrics.Instrumental else Lyrics.NotFound
     }
 

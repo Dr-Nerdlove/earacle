@@ -266,4 +266,47 @@ class LrclibApiTest {
         val flagOnly = a.copy(durationSeconds = 355.2, hasWordSync = true, lyricsfile = null)
         assertEquals(a, LrclibApi.pickBest(listOf(a, flagOnly), "Bohemian Rhapsody", "Queen"))
     }
+
+    // --- Opening a song from the history (point 8) ---
+
+    @Test
+    fun buildsTheUrlOfOneEntryById() {
+        assertEquals("https://lrclib.net/api/get/4711", LrclibApi.buildGetUrl(4711L))
+    }
+
+    @Test
+    fun parsesTheAnswerOfOneEntry() {
+        val body = """{"id":4711,"trackName":"A","artistName":"B","albumName":"C","duration":200.0,
+            "instrumental":false,"plainLyrics":"plain","syncedLyrics":"[00:01.00] x"}"""
+        assertEquals(
+            LrclibTrack("A", "B", 200.0, false, "plain", "[00:01.00] x", id = 4711L, albumName = "C"),
+            LrclibApi.parseTrackAnswer(body),
+        )
+    }
+
+    @Test
+    fun theAnswerOfOneEntryIsNullWhenItIsNotAnObject() {
+        assertNull(LrclibApi.parseTrackAnswer("<html>"))
+        assertNull(LrclibApi.parseTrackAnswer("""[{"trackName":"A"}]"""))
+    }
+
+    @Test
+    fun lyricsFromALyricsfileCarryTheLrclibIdToo() {
+        val yaml = "version: '1.0'\nlines:\n- text: Alpha\n  start_ms: 1000\n  end_ms: 2000\n"
+        val lyrics = LrclibApi.toLyrics(track().copy(id = 5L, lyricsfile = yaml, hasWordSync = true))
+        assertEquals(1000L, (lyrics as Lyrics.Synced).lines.single().timeMs)
+        assertEquals(5L, lyrics.lrclibId)
+    }
+
+    @Test
+    fun lyricsCarryTheLrclibIdOfTheirEntry() {
+        val synced = LrclibApi.toLyrics(track().copy(id = 7L))
+        assertEquals(7L, (synced as Lyrics.Synced).lrclibId)
+        assertEquals(7L, (synced as Lyrics?).lrclibId)
+        val plain = LrclibApi.toLyrics(track(synced = null).copy(id = 8L))
+        assertEquals(8L, (plain as Lyrics.Plain).lrclibId)
+        assertNull((LrclibApi.toLyrics(track()) as Lyrics.Synced).lrclibId)
+        assertNull(Lyrics.NotFound.lrclibId)
+        assertNull(null.lrclibId)
+    }
 }

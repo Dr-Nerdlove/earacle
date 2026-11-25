@@ -33,7 +33,7 @@ singing, since one looks at the screen anyway).
 - [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
 - [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
 - [x] 7. Search a song by hand - branch `feature/manual-search`
-- [ ] 8. Song history page - branch `feature/song-history`
+- [x] 8. Song history page - branch `feature/song-history`
 - [x] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
   2026-11-25; done first, before 7 and 8; the owner chose SnakeYAML Engine as the YAML reader)
 
@@ -424,6 +424,17 @@ round trip of the line format, a broken line and an unknown version are skipped 
 off last line, 10,000 entries read back correctly, the day headings (today, yesterday, older, another year,
 just before and after midnight), the `/api/get/{id}` URL. Sabotage: e.g. no duplicate rule, or a broken line
 empties the whole history.
+
+**Built as planned except:** the file store (`FileHistoryStore`) uses only `java.io`, so it lives in the pure package
+`history/` (not next to `StagePreferences.kt`) and is tested with real temporary files. `HistoryLog` joins the
+in-memory history and the store; the ViewModel runs all its calls on one single-threaded IO dispatcher, so file
+access never blocks the screen and happens in order. The history page lies over the search and the lyrics screen
+(`MainViewModel.historyOpen`), so back from the page returns to where it was opened, also to the search. Entries
+are kept oldest first in the file; a delete rewrites the file through a temporary file; adding to a file whose last
+line was cut off starts a new line first. Only the last delete can be undone (the snackbar of an earlier one is
+replaced). The day headings use the pattern `DateFormat.getBestDateTimePattern` gives for the phone's language and
+fall back to the ISO date when `java.time` cannot use a pattern. Not run on a phone yet: the page, the swipe and
+the snackbar are only compile-checked by CI; the logic and the file are unit-tested.
 
 **On the phone:** recognize a few songs and pick one by hand, check the page, the headings, the times and
 the "by hand" mark; let the app listen along through a song change (one new entry, not one per

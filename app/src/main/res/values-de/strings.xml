@@ -37,4 +37,21 @@
     <string name="search_kind_plain">Text ohne Zeiten</string>
     <string name="search_kind_instrumental">Instrumental</string>
     <string name="picked_tap_hint">Tippe auf die Zeile, die gerade gesungen wird.</string>
+    <string name="history_open">Verlauf</string>
+    <string name="history_title">Verlauf</string>
+    <string name="history_back">Zurück</string>
+    <string name="history_empty">Noch keine Songs. Erkannte und von dir gewählte Songs erscheinen hier.</string>
+    <string name="history_today">Heute</string>
+    <string name="history_yesterday">Gestern</string>
+    <string name="history_by_hand">von Hand</string>
+    <string name="history_deleted">Eintrag gelöscht</string>
+    <string name="history_undo">Rückgängig</string>
+    <string name="history_delete_entry">Diesen Eintrag löschen</string>
+    <string name="history_clear">Verlauf löschen</string>
+    <string name="history_clear_title">Den ganzen Verlauf löschen?</string>
+    <string name="history_clear_message">Alle Einträge werden gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="history_clear_confirm">Alles löschen</string>
+    <string name="history_clear_cancel">Abbrechen</string>
+    <string name="history_recent">Zuletzt gehört</string>
+    <string name="history_show_all">Alle anzeigen</string>
 </resources>
