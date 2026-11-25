@@ -30,7 +30,7 @@ singing, since one looks at the screen anyway).
 - [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR #29
 - [x] 3. The current line fills up - branch `feature/line-fill`, PR #30
 - [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
-- [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #TBD
+- [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
 - [ ] 6. Stage mode - branch `feature/stage-mode`
 
 ## Ground rules for all points
