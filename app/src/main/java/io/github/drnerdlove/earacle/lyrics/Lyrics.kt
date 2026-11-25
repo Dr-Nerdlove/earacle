@@ -30,3 +30,9 @@ val Lyrics?.songDurationSeconds: Double?
 interface LyricsProvider {
     suspend fun find(title: String, artist: String): Lyrics
 }
+
+/** Free search in the lyrics source, for songs the user picks by hand. */
+interface LyricsSearch {
+    /** The entries found for [query] (empty for a blank query), or null when the search itself failed. */
+    suspend fun search(query: String): List<LrclibTrack>?
+}

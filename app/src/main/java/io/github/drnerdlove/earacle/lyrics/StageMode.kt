@@ -45,10 +45,11 @@ interface StageStore {
 /**
  * Whether the stage screen is shown instead of the normal one: only when the user switched it on and the
  * song has synced lyrics, or they are still being looked up (so the screen does not flicker between two
- * songs). Plain lyrics or a message have no lines to enlarge and use the normal screen.
+ * songs). Plain lyrics or a message have no lines to enlarge and use the normal screen. A song picked by hand
+ * whose clock has not started yet ([clockRunning] false) also stays on the normal screen: its lines have to be tapped.
  */
-fun showsStageMode(enabled: Boolean, lyrics: Lyrics?): Boolean =
-    enabled && (lyrics == null || lyrics is Lyrics.Synced)
+fun showsStageMode(enabled: Boolean, lyrics: Lyrics?, clockRunning: Boolean = true): Boolean =
+    enabled && clockRunning && (lyrics == null || lyrics is Lyrics.Synced)
 
 /**
  * The lines stage mode shows: the current one in the middle and the next one below it. All other lines are

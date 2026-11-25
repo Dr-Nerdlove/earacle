@@ -28,6 +28,25 @@ class LrclibApiTest {
     }
 
     @Test
+    fun buildsTheSearchUrlForTypedText() {
+        assertEquals(
+            "https://lrclib.net/api/search?q=Bl%C3%BChende+Landschaften+AC%2FDC",
+            LrclibApi.buildQueryUrl("  Blühende Landschaften AC/DC \n"),
+        )
+        assertNull(LrclibApi.buildQueryUrl(""))
+        assertNull(LrclibApi.buildQueryUrl("   "))
+    }
+
+    @Test
+    fun resultsWithoutIdOrAlbumStillParse() {
+        val track = LrclibApi.parseSearchResults(
+            """[{"trackName":"A","artistName":"B","duration":1,"instrumental":false,"albumName":null,"id":null}]""",
+        )!!.single()
+        assertNull(track.id)
+        assertNull(track.albumName)
+    }
+
+    @Test
     fun parsesSearchAnswer() {
         val body = """[{"id":1,"trackName":"A","artistName":"B","albumName":"C","duration":200.0,
             "instrumental":false,"plainLyrics":"plain","syncedLyrics":"[00:01.00] x"},
@@ -35,7 +54,9 @@ class LrclibApiTest {
             "plainLyrics":null,"syncedLyrics":null}]"""
         val tracks = LrclibApi.parseSearchResults(body)!!
         assertEquals(2, tracks.size)
-        assertEquals(LrclibTrack("A", "B", 200.0, false, "plain", "[00:01.00] x"), tracks[0])
+        assertEquals(LrclibTrack("A", "B", 200.0, false, "plain", "[00:01.00] x", id = 1L, albumName = "C"), tracks[0])
+        assertNull(tracks[1].albumName)
+        assertEquals(2L, tracks[1].id)
         assertNull(tracks[1].syncedLyrics)
         assertNull(tracks[1].plainLyrics)
         assertTrue(tracks[1].instrumental)

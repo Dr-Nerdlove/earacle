@@ -7,7 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Looks up lyrics on LRCLIB (lrclib.net, free, no key). */
-class LrclibClient : LyricsProvider {
+class LrclibClient : LyricsProvider, LyricsSearch {
     override suspend fun find(title: String, artist: String): Lyrics = withContext(Dispatchers.IO) {
         try {
             for (url in listOf(
@@ -22,6 +22,15 @@ class LrclibClient : LyricsProvider {
             Lyrics.NotFound
         } catch (e: IOException) {
             Lyrics.Failure
+        }
+    }
+
+    override suspend fun search(query: String): List<LrclibTrack>? = withContext(Dispatchers.IO) {
+        val url = LrclibApi.buildQueryUrl(query) ?: return@withContext emptyList()
+        try {
+            get(url)?.let { LrclibApi.parseSearchResults(it) }
+        } catch (e: IOException) {
+            null
         }
     }
 

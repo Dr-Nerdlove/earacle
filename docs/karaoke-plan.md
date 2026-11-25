@@ -32,7 +32,7 @@ singing, since one looks at the screen anyway).
 - [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
 - [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
 - [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
-- [ ] 7. Search a song by hand - branch `feature/manual-search`
+- [x] 7. Search a song by hand - branch `feature/manual-search`
 - [ ] 8. Song history page - branch `feature/song-history`
 - [x] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
   2026-11-25; done first, before 7 and 8; the owner chose SnakeYAML Engine as the YAML reader)
@@ -340,7 +340,15 @@ fallback for Shazam instead of Olaf.
   start = now, shift = 0). The position while waiting is the start of the song and nothing counts as current.
 - `LrclibClient` gets `search(query): List<LrclibTrack>?` (null on failure), reusing its `get`.
 
-**Where:** a new `UiState` for the search (query, results, loading, error, and the state to return to),
+**Built as planned except:** the search is its own `StateFlow<SearchState?>` in `MainViewModel` next to `UiState`
+instead of a new `UiState`, so a recognition or listening along that is running is not disturbed and nothing has to
+remember "the state to return to" (closing the search just shows `UiState` again). Picking a result cancels
+listening along. The "Search song" button is on the start, "not recognized", error and permission screens, and on
+the lyrics screen once lyrics are loaded but not synced. The tap rules, the sort and the "nothing highlighted yet"
+rule are in `lyrics/ManualSong.kt` (tested); `SearchScreen.kt` draws the screen. Not run on a phone yet, and the
+prefilled query (title without extras + the artist as Shazam spells it) was not checked against the real search.
+
+**Where (as planned):** a new `UiState` for the search (query, results, loading, error, and the state to return to),
 `MainViewModel.openSearch(prefill)`, `search(query)`, `pick(track)`, `closeSearch()`; the search screen as
 its own composable in `MainActivity.kt` or a new file next to it. Lyrics of the picked entry via
 `LrclibApi.toLyrics`.
