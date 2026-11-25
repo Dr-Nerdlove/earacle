@@ -79,48 +79,99 @@ fun StartContent(
     modifier: Modifier = Modifier,
 ) {
     val busy = state is UiState.Listening || state is UiState.Recognizing
+    val showRecent = !busy && recent.isNotEmpty()
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .heightIn(min = maxHeight)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (busy) {
-                // The bar is not usable while recording; its space stays so the screen does not jump.
-                Spacer(Modifier.height(SearchBarHeight))
-            } else {
-                SearchBar(onSearch, onHistory)
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = stringResource(
-                        when (state) {
-                            is UiState.Listening -> R.string.status_listening
-                            UiState.Recognizing -> R.string.status_recognizing
-                            else -> R.string.start_headline
-                        },
-                    ),
-                    style = MaterialTheme.typography.displaySmallEmphasized,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(24.dp))
+        if (maxHeight >= CentredLayoutMinHeight) {
+            // The element sits in the middle of the screen in every phase: both outer parts have the same weight.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SearchSlot(busy, onSearch, onHistory)
+                    Spacer(Modifier.weight(1f))
+                    Headline(state)
+                    Spacer(Modifier.height(24.dp))
+                }
                 RecognizeElement(state, onRecognize)
-                Spacer(Modifier.height(24.dp))
-                Hint(startHint(state))
-                Spacer(Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Spacer(Modifier.height(24.dp))
+                    Hint(startHint(state))
+                    Spacer(Modifier.weight(1f))
+                    if (showRecent) {
+                        RecentList(recent, onOpenRecent)
+                    }
+                }
             }
-            if (!busy && recent.isNotEmpty()) {
-                RecentList(recent, onOpenRecent)
-            } else {
-                Spacer(Modifier.height(0.dp))
+        } else {
+            // Small screens and landscape: the page scrolls, so nothing is cut off.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                SearchSlot(busy, onSearch, onHistory)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(Modifier.height(16.dp))
+                    Headline(state)
+                    Spacer(Modifier.height(24.dp))
+                    RecognizeElement(state, onRecognize)
+                    Spacer(Modifier.height(24.dp))
+                    Hint(startHint(state))
+                    Spacer(Modifier.height(16.dp))
+                }
+                if (showRecent) {
+                    RecentList(recent, onOpenRecent)
+                } else {
+                    Spacer(Modifier.height(0.dp))
+                }
             }
         }
     }
+}
+
+/** Screens at least this tall get the layout with the element exactly in the middle; smaller ones scroll. */
+private val CentredLayoutMinHeight = 560.dp
+
+/** The search bar, or a blank of the same height while recording (the bar is not usable then; nothing jumps). */
+@Composable
+private fun SearchSlot(busy: Boolean, onSearch: () -> Unit, onHistory: () -> Unit) {
+    if (busy) {
+        Spacer(Modifier.height(SearchBarHeight))
+    } else {
+        SearchBar(onSearch, onHistory)
+    }
+}
+
+@Composable
+private fun Headline(state: UiState) {
+    Text(
+        text = stringResource(
+            when (state) {
+                is UiState.Listening -> R.string.status_listening
+                UiState.Recognizing -> R.string.status_recognizing
+                else -> R.string.start_headline
+            },
+        ),
+        style = MaterialTheme.typography.displaySmallEmphasized,
+        textAlign = TextAlign.Center,
+    )
 }
 
 private val SearchBarHeight = 56.dp
