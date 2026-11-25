@@ -21,7 +21,7 @@ here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 **Early stage (version 0.6.0).** Earacle recognizes a song from the microphone, shows its title, artist and
 position, and shows the synced lyrics with the current line highlighted. It keeps listening along and follows
 song changes, but only while the app is open; the screen stays on meanwhile. Listening in the background (with
-the screen off) is not built yet; see "Planned".
+the screen off) is not planned.
 
 ## Features
 
@@ -44,12 +44,6 @@ the screen off) is not built yet; see "Planned".
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
   recordings in a row without a match
 - Interface in German and English
-
-## Planned
-
-- Listening with the screen off, in the background, through a foreground service
-- Possible fallback recognition with Olaf against your own music library, in case the unofficial Shazam API
-  stops working
 
 ## How it works
 

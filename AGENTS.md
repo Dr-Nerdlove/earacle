@@ -236,8 +236,8 @@ repository belongs to someone else, these points still apply unless "Project kno
 - **Product languages:** German and English. Every user-facing text exists in both (`values/strings.xml`
   for English as the default, `values-de/strings.xml` for German), in the same change.
 - **Planned architecture (decided, not built yet):**
-  - Kotlin + Jetpack Compose; microphone capture with `AudioRecord` (PCM 16-bit mono) in a foreground
-    service of type `microphone`, so it keeps listening with the screen off.
+  - Kotlin + Jetpack Compose; microphone capture with `AudioRecord` (PCM 16-bit mono) while the app is
+    visible (no foreground service; see "Rejected options").
   - Song recognition through the **unofficial (reverse-engineered) Shazam API**, as used by open-source
     projects such as SongRec, ShazamIO and MusicRecognizer (Audile, a Kotlin Android app and the best
     reference). Chosen because it is free and returns the position within the song. The API is not
@@ -291,11 +291,12 @@ repository belongs to someone else, these points still apply unless "Project kno
     black, always dark theme; current line 32-64 sp (5 steps, `A−` / `A+`), next line at 0.6 of it, other lines
     hidden; on and size are in `MainViewModel.stage` (survives rotation) and saved in SharedPreferences. Only for
     songs with synced lyrics. Unit-tested (size steps, which lines show); the screen itself is only compile-checked by CI, not yet seen on a phone.
-  - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
-    library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
-  trial or small free quota).
+  trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
+  off (a foreground service of type `microphone`; not needed, since one looks at the screen while singing
+  along), and own fingerprinting with **Olaf** against the owner's music library as a fallback for Shazam (the
+  owner has hardly any music files on the phone, and radio plays much that is not in one's library).
 - **Code layout:** one Gradle module `app` (Kotlin + Jetpack Compose), package and applicationId
   `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
   Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
