@@ -36,7 +36,7 @@ singing, since one looks at the screen anyway).
 - [x] 8. Song history page - branch `feature/song-history`
 - [x] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
   2026-11-25; done first, before 7 and 8; the owner chose SnakeYAML Engine as the YAML reader)
-- [ ] 10. A stronger fill colour - branch `feature/stronger-fill-colour` (only after point 8)
+- [x] 10. A stronger fill colour - branch `feature/stronger-fill-colour`, PR #45
 
 ## Ground rules for all points
 
