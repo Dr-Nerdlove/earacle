@@ -575,7 +575,7 @@ saturated one with a little less lightness does: the result is #FE9789 (differen
 The search tries every lightness and chroma step, takes the nearest colour that reaches 35 with 4.5:1, and the
 closest one if none does. The fill is provided as `LocalLyricFill` from `EaracleTheme` (black background in stage
 mode). Tests in `FillColourTest` include the owner's measured palette as a test case (the screenshot itself is not
-in the repository because it shows copyrighted lyrics). Still open: 35 is a first guess, to be tuned on the phone.
+in the repository because it shows copyrighted lyrics). Threshold: the owner compared 35, 50 and 65 in a preview (owner palette: #FE9789, #F67366, #FB584F) and chose **65** (#FB584F, contrast 6.1:1). Still to be seen on the phone.
 
 ## After the points
 

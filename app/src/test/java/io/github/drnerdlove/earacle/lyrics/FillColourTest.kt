@@ -62,8 +62,8 @@ class FillColourTest {
 
     @Test
     fun greyPrimaryChangesOnlyLightness() {
-        val primary = 0xFFBBBBBB.toInt()
-        val muted = 0xFF999999.toInt()
+        val primary = 0xFF5A5A5A.toInt()
+        val muted = 0xFF4A4A4A.toInt()
         val fill = fillColour(primary, muted, ownerBackground)
         assertTrue(colourDifference(fill, muted) >= minDiff)
         val r = (fill shr 16) and 0xFF

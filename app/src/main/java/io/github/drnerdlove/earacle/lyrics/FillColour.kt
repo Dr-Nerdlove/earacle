@@ -11,8 +11,8 @@ import kotlin.math.sqrt
 
 /** Limits for [fillColour]. */
 object FillColourLimits {
-    /** The fill must differ from the muted text by at least this CIE76 colour difference (first guess, tune on the phone). */
-    const val MIN_FILL_DIFFERENCE = 35.0
+    /** The fill must differ from the muted text by at least this CIE76 colour difference (chosen by the owner from a preview, 2026-11-25). */
+    const val MIN_FILL_DIFFERENCE = 65.0
 
     /** The fill must stay readable on the background (WCAG AA for text). */
     const val MIN_CONTRAST = 4.5

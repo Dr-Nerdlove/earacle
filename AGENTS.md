@@ -312,8 +312,8 @@ repository belongs to someone else, these points still apply unless "Project kno
     Logic and file are unit-tested; the page, swipe and snackbar are only compile-checked, not yet on a phone.
   - Stronger fill colour (built, point 10, `lyrics/FillColour.kt`, `LocalLyricFill` in `MainActivity.kt`): `fillColour(primary,
     muted, background)` keeps `colorScheme.primary` when its CIE76 difference to the muted text
-    (`onSurfaceVariant`) is at least `MIN_FILL_DIFFERENCE` (35, first guess); otherwise it takes the nearest colour of
-    the same hue (more chroma, lightness either way) that reaches 35 and keeps WCAG 4.5:1 on the background (black in
+    (`onSurfaceVariant`) is at least `MIN_FILL_DIFFERENCE` (65, chosen by the owner from a preview); otherwise it takes the nearest colour of
+    the same hue (more chroma, lightness either way) that reaches 65 and keeps WCAG 4.5:1 on the background (black in
     stage mode); none reaching 35 means the closest one. `EaracleTheme` computes it once per scheme and provides
     it as `LocalLyricFill`, used by the filling line, the current line and the countdown dots. The muted text is
     unchanged. Tested on the JVM (including the owner's palette); on the phone not yet seen.
