@@ -29,7 +29,7 @@ singing, since one looks at the screen anyway).
 - [x] 1. Tap to sync and fine offset - branch `feature/tap-to-sync` 
 - [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR #29
 - [x] 3. The current line fills up - branch `feature/line-fill`, PR #30
-- [ ] 4. Word timing where the lyrics have it - branch `feature/word-timing`
+- [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
 - [ ] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`
 - [ ] 6. Stage mode - branch `feature/stage-mode`
 

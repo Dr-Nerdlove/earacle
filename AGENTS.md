@@ -279,6 +279,11 @@ repository belongs to someone else, these points still apply unless "Project kno
     Fill counted in code points, so emoji are never cut. Drawn per frame in `FillingLine`: the highlighted text
     in an offscreen `graphicsLayer`, the unsung part recoloured with a `SrcAtop` rectangle per visual line
     from the `TextLayoutResult`; only this line redraws each frame.
+  - Word timing (built, point 4, `Lrc.kt`, `LineFill.kt`): `Lrc.parse` removes `<mm:ss.xx>` and mid-line
+    `[mm:ss.xx]` tags (broken ones too) into `LyricLine.words` (UTF-16 index + time) and `endTimeMs` (tag after the
+    last word, also used by `estimatedLineEndMs`); repeated-timestamp lines keep no word times. `filledEndIndex`
+    jumps word by word when a line has them, else uses the even pace. Not checked on real data (LRCLIB had none
+    on 2026-11-24), only by tests. A mid-line `[..]` stamp used to stay in the text; that old test was replaced.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple

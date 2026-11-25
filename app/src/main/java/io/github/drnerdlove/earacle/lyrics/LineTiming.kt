@@ -15,12 +15,14 @@ fun visibleCharacterCount(text: String): Int = text.codePointCount(0, text.lengt
 /**
  * Estimated end of the sung part of the line at [index]. LRC has no end times, so it is guessed:
  * start + min(time until the next line, max([LineTiming.MIN_LINE_MS], [LineTiming.MS_PER_CHAR] x characters)).
- * An empty line (an instrumental part) ends at its start. [lines] must be sorted by time.
+ * An empty line (an instrumental part) ends at its start. A line with a closing time tag
+ * ([LyricLine.endTimeMs]) uses that instead of the guess. [lines] must be sorted by time.
  */
 fun estimatedLineEndMs(lines: List<LyricLine>, index: Int): Long {
     val line = lines[index]
     if (line.text.isBlank()) return line.timeMs
-    val sung = maxOf(LineTiming.MIN_LINE_MS, LineTiming.MS_PER_CHAR * visibleCharacterCount(line.text))
+    val sung = line.endTimeMs?.let { (it - line.timeMs).coerceAtLeast(0L) }
+        ?: maxOf(LineTiming.MIN_LINE_MS, LineTiming.MS_PER_CHAR * visibleCharacterCount(line.text))
     val available = if (index + 1 < lines.size) {
         (lines[index + 1].timeMs - line.timeMs).coerceAtLeast(0L)
     } else {
