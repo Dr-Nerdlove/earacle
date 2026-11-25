@@ -5,7 +5,9 @@ import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.drnerdlove.earacle.audio.MicrophoneException
+import io.github.drnerdlove.earacle.audio.MIN_WAVE
 import io.github.drnerdlove.earacle.audio.MicrophoneRecorder
+import io.github.drnerdlove.earacle.audio.smoothAmplitude
 import io.github.drnerdlove.earacle.history.HistoryEntry
 import io.github.drnerdlove.earacle.history.HistoryLog
 import io.github.drnerdlove.earacle.history.HistoryStore
@@ -48,7 +50,7 @@ enum class ErrorKind { MICROPHONE, NETWORK, RATE_LIMITED, SERVER }
 
 sealed interface UiState {
     data object Idle : UiState
-    data class Listening(val progress: Float) : UiState
+    data class Listening(val progress: Float, val level: Float = MIN_WAVE) : UiState
     data object Recognizing : UiState
     data class Found(
         val match: RecognitionResult.Match,
@@ -311,8 +313,10 @@ class MainViewModel(
         job = viewModelScope.launch {
             try {
                 tracking?.join()
-                val recording = MicrophoneRecorder.record { progress ->
-                    _state.value = UiState.Listening(progress)
+                var level = MIN_WAVE
+                val recording = MicrophoneRecorder.record { progress, chunkLevel ->
+                    level = smoothAmplitude(level, chunkLevel)
+                    _state.value = UiState.Listening(progress, level)
                 }
                 _state.value = UiState.Recognizing
                 _state.value = when (val result = recognizer.recognize(recording)) {
@@ -431,7 +435,7 @@ class MainViewModel(
             appVisible.first { it }
             setRelistening(true)
             val result = try {
-                val recording = MicrophoneRecorder.record { }
+                val recording = MicrophoneRecorder.record { _, _ -> }
                 // Silence is never sent to the service.
                 val answer = if (SongTracking.isSilent(recording.samples)) {
                     RecognitionResult.NoMatch

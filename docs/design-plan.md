@@ -6,7 +6,10 @@ from the album cover). Mock-ups of all three, the three loading animations and t
 preview page made in that session (a private claude.ai artifact of the owner's:
 https://claude.ai/artifact/SznkPjaPNjAG9iNvpcZrg2; a later session can read it with the Artifact tool).
 
-Nothing of this is built yet.
+Step 1 (start screen and listening animation) is built on the branch `feature/expressive-start-screen`; it needs
+Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has none of the Expressive components
+(checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
+`MaterialExpressiveTheme` is internal). Steps 2 and 3 are not built yet.
 
 ## Why it looked dated
 
@@ -73,6 +76,12 @@ progress now; it has to report a level too (e.g. the RMS of the last chunk, scal
 changing what is sent to Shazam. The silence check of listening along (RMS below 60) shows the scale. Keep the
 mapping from RMS to wave height a pure function with a unit test. Listening along (the automatic recordings
 after a match) shows no animation, only the "listening" hint on the lyrics screen.
+
+Built in `StartScreen.kt` and `audio/LoudnessLevel.kt`: the level is `waveAmplitude(chunkRms(...))` of each
+chunk the recorder reads (log scale from `SILENCE_RMS` 60 to `LOUD_RMS` 4000, floor 0.05 so the wave keeps
+moving), smoothed with `smoothAmplitude` (fast up, slow down). `CircularWavyProgressIndicator` reads the amplitude
+lambda while drawing but eases every change over about 0.5 s (its own tween, checked in the 1.5.0 source), so the
+waves follow the loudness in half-second steps, not each single beat.
 
 Respect the system setting for reduced animations: then the ring only fills, without waves, and the loading
 indicator may stay still.
