@@ -2,6 +2,7 @@
 <resources>
     <string name="button_recognize">Lied erkennen</string>
     <string name="button_try_again">Nochmal versuchen</string>
+    <string name="start_headline">Was läuft gerade?</string>
     <string name="hint_idle">Tippe auf den Knopf, um das Lied zu erkennen, das gerade in der Nähe läuft.</string>
     <string name="status_listening">Höre zu…</string>
     <string name="status_relistening">Hört mit…</string>

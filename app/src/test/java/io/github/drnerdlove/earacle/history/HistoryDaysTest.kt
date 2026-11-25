@@ -89,4 +89,11 @@ class HistoryDaysTest {
         assertEquals("2026-11-23", text)
         assertFalse(text.isEmpty())
     }
+
+    @Test
+    fun dayKindOfNamesTodayYesterdayAndOlder() {
+        assertEquals(DayKind.TODAY, dayKindOf(at(2026, 11, 25, 0, 5), now, zone))
+        assertEquals(DayKind.YESTERDAY, dayKindOf(at(2026, 11, 24, 23, 59), now, zone))
+        assertEquals(DayKind.OTHER, dayKindOf(at(2026, 11, 23, 23, 59), now, zone))
+    }
 }

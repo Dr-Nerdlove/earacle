@@ -17,6 +17,16 @@ data class DayGroup(
     val entries: List<HistoryEntry>,
 )
 
+/** Whether [timeMs] falls on today, yesterday or an earlier day of [zone], relative to [nowMs]. */
+fun dayKindOf(timeMs: Long, nowMs: Long, zone: ZoneId): DayKind {
+    val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
+    return when (Instant.ofEpochMilli(timeMs).atZone(zone).toLocalDate()) {
+        today -> DayKind.TODAY
+        today.minusDays(1) -> DayKind.YESTERDAY
+        else -> DayKind.OTHER
+    }
+}
+
 /**
  * Groups [entries] (newest first, as given) by calendar day in [zone], for the headings of the history page. Days
  * follow each other as the entries do; "today" and "yesterday" are relative to [nowMs].

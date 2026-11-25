@@ -247,11 +247,11 @@ private fun HistoryRow(
 
 /** The language of the phone. */
 @Composable
-private fun currentLocale(): Locale {
+internal fun currentLocale(): Locale {
     val configuration = LocalConfiguration.current
     return remember(configuration) { configuration.locales[0] ?: Locale.getDefault() }
 }
 
 /** The pattern for a day heading in the phone's language, e.g. "Mon, Nov 23" (with the year when [withYear]). */
-private fun dayPattern(locale: Locale, withYear: Boolean): String =
+internal fun dayPattern(locale: Locale, withYear: Boolean): String =
     DateFormat.getBestDateTimePattern(locale, if (withYear) "EEEdMMMy" else "EEEdMMM")

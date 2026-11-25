@@ -6,7 +6,10 @@ from the album cover). Mock-ups of all three, the three loading animations and t
 preview page made in that session (a private claude.ai artifact of the owner's:
 https://claude.ai/artifact/SznkPjaPNjAG9iNvpcZrg2; a later session can read it with the Artifact tool).
 
-Nothing of this is built yet.
+Step 1 (start screen and listening animation) is built (PR #52; confirmed on the owner's phone 2026-11-25); it needs
+Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has none of the Expressive components
+(checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
+`MaterialExpressiveTheme` is internal). Steps 2 and 3 are not built yet.
 
 ## Why it looked dated
 
@@ -45,7 +48,7 @@ Nothing of this is built yet.
 
 - At the top a rounded search bar "Search song" / "Song suchen" (like Google's own apps) that opens the search;
   the history icon sits at its end and opens the history.
-- A large emphasized headline: "What's playing?" / "Was läuft gerade?".
+- A large emphasized headline: "What’s playing?" / "Was läuft gerade?".
 - In the middle the big recognize button: a Material 3 Expressive shape with a wavy edge (9-scallop "cookie",
   `MaterialShapes.Cookie9Sided` if available), colour `primary`, the microphone icon in `onPrimary`. The button
   has an accessible label ("Recognize song" / "Lied erkennen").
@@ -60,19 +63,19 @@ has while listening, about 1.8 times a normal 24 dp icon, i.e. about 44 dp).
 
 | Phase | Title | What is shown |
 | --- | --- | --- |
-| Idle | "What's playing?" | The cookie-shaped button, at rest, microphone on it. |
-| Recording, 12 s | "Listening…" / "Höre zu…" | **Only the microphone** (in `primary`, no button shape behind it) **and a wavy ring around it.** The ring fills clockwise from the top in the 12 s of the recording (`UiState.Listening.progress`). The height of its waves follows the loudness at the microphone: almost flat when silent, higher with the beat of the music, so one sees whether the music arrives. A faint full circle shows the track the ring fills. Hint below as now ("Hold the phone near the music." / "Halte das Handy nah an die Musik."). |
+| Idle | "What’s playing?" | The cookie-shaped button, at rest, microphone on it. |
+| Recording, 12 s | "Listening…" / "Höre zu…" | **Only the microphone** (in `primary`, no button shape behind it) **and a wavy ring around it.** The ring fills clockwise from the top in the 12 s of the recording (`UiState.Listening.progress`). The waves have the standard Material 3 Expressive height (constant; owner's decision 2026-11-25, see below). A faint full circle shows the track the ring fills. Hint below as now ("Hold the phone near the music." / "Halte das Handy nah an die Musik."). |
 | Waiting for Shazam, about 1-3 s | "Recognizing…" / "Erkenne…" | The ring disappears; the Material 3 Expressive loading indicator (shapes morphing into each other while turning, `LoadingIndicator`) in `primary`, the microphone in `onPrimary` on it, same size as before. |
 | Match | - | The lyrics screen. |
 
 The owner rejected a version where the cookie shape stayed under the microphone while the ring waved around it
 ("doubled, not nice"): while recording there is only the ring.
 
-The loudness needs a level from the recorder while it records. `MicrophoneRecorder.record` reports only the
-progress now; it has to report a level too (e.g. the RMS of the last chunk, scaled and smoothed), without
-changing what is sent to Shazam. The silence check of listening along (RMS below 60) shows the scale. Keep the
-mapping from RMS to wave height a pure function with a unit test. Listening along (the automatic recordings
-after a match) shows no animation, only the "listening" hint on the lyrics screen.
+Decided by the owner on 2026-11-25 after trying it on the phone: the ring uses the standard Material 3 Expressive
+wave (`WavyProgressIndicatorDefaults.indicatorAmplitude`, constant height), not the loudness. A first version let
+the waves follow the loudness; that code (`LoudnessLevel.kt`, the level from `MicrophoneRecorder.record`) was
+removed. Listening along (the automatic recordings after a match) shows no animation, only the "listening" hint
+on the lyrics screen.
 
 Respect the system setting for reduced animations: then the ring only fills, without waves, and the loading
 indicator may stay still.

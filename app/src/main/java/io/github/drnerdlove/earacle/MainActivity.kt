@@ -39,7 +39,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalIconButton
@@ -69,6 +68,7 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import io.github.drnerdlove.earacle.history.FileHistoryStore
+import io.github.drnerdlove.earacle.history.HistoryEntry
 import io.github.drnerdlove.earacle.lyrics.CountdownTiming
 import java.io.File
 import io.github.drnerdlove.earacle.lyrics.LyricLine
@@ -295,6 +295,8 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         stage = stage,
         onStageChange = viewModel::setStageMode,
         onStageTextSize = viewModel::changeStageTextSize,
+        recent = history.newestFirst().take(START_RECENT_COUNT),
+        onOpenRecent = viewModel::openFromHistory,
     )
 }
 
@@ -315,6 +317,9 @@ fun MainContent(
     onStageChange: (Boolean) -> Unit = {},
     /** `A+` (true) or `A−` (false) in stage mode. */
     onStageTextSize: (Boolean) -> Unit = {},
+    /** The newest songs of the history, shown on the start screen. */
+    recent: List<HistoryEntry> = emptyList(),
+    onOpenRecent: (HistoryEntry) -> Unit = {},
 ) {
     val busy = state is UiState.Listening || state is UiState.Recognizing
     val retry = state is UiState.NotFound || state is UiState.Error ||
@@ -413,58 +418,15 @@ fun MainContent(
         }
         return
     }
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.displaySmall,
-        )
-        Spacer(Modifier.height(24.dp))
-        StatusArea(state)
-        Spacer(Modifier.height(32.dp))
-        Button(onClick = onRecognize, enabled = !busy) { Text(buttonLabel) }
-        if (!busy) {
-            TextButton(onClick = onSearch) { Text(stringResource(R.string.search_open)) }
-            TextButton(onClick = onHistory) { Text(stringResource(R.string.history_open)) }
-        }
-    }
-}
-
-@Composable
-private fun StatusArea(state: UiState) {
-    when (state) {
-        UiState.Idle -> Hint(stringResource(R.string.hint_idle))
-        is UiState.Listening -> {
-            Text(stringResource(R.string.status_listening), style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(12.dp))
-            LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(12.dp))
-            Hint(stringResource(R.string.hint_listening))
-        }
-        UiState.Recognizing -> {
-            Text(stringResource(R.string.status_recognizing), style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(12.dp))
-            CircularProgressIndicator()
-        }
-        is UiState.Found -> Unit // shown by FoundArea
-        UiState.NotFound -> Hint(stringResource(R.string.status_not_found))
-        is UiState.Error -> Hint(
-            stringResource(
-                when (state.kind) {
-                    ErrorKind.MICROPHONE -> R.string.error_microphone
-                    ErrorKind.NETWORK -> R.string.error_network
-                    ErrorKind.RATE_LIMITED -> R.string.error_rate_limited
-                    ErrorKind.SERVER -> R.string.error_server
-                },
-            ),
-        )
-        UiState.PermissionDenied -> Hint(stringResource(R.string.status_permission_denied))
-    }
+    StartContent(
+        state = state,
+        recent = recent,
+        onRecognize = onRecognize,
+        onSearch = onSearch,
+        onHistory = onHistory,
+        onOpenRecent = onOpenRecent,
+        modifier = modifier,
+    )
 }
 
 /** The clock of the lyrics screen: [SystemClock.elapsedRealtime], refreshed every 200 ms while [state] shows. */

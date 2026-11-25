@@ -12,6 +12,8 @@ val sharedKeystorePassword = System.getenv("EARACLE_KEYSTORE_PASSWORD")
 android {
     namespace = "io.github.drnerdlove.earacle"
     compileSdk = 37
+    // Compose 1.13 (BOM 2026.11.01) requires compiling against API 37.1 or later; targetSdk stays 37.
+    compileSdkMinor = 1
 
     defaultConfig {
         applicationId = "io.github.drnerdlove.earacle"

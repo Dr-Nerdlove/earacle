@@ -321,9 +321,9 @@ repository belongs to someone else, these points still apply unless "Project kno
     stage mode, else returns from any other screen to the start screen (stops a running recognition and listening
     along; a lyrics lookup still running cannot bring the song back but still adds it to the history); on the start
     screen back closes the app. The decision is the pure `backAction`, unit-tested.
-  - Design (decided 2026-11-25, not built yet): `docs/design-plan.md` plans the move to Material 3 Expressive
+  - Design (decided 2026-11-25; step 1 built, PR #52, works on the owner's phone 2026-11-25): `docs/design-plan.md` plans the move to Material 3 Expressive
     (proposal B of three): start screen with a cookie-shaped recognize button, a wavy ring around the microphone
-    while recording (its waves follow the loudness), the morphing loading indicator while Shazam answers; then the
+    while recording (standard Material 3 Expressive wave, not the loudness: owner's decision 2026-11-25 after trying it on the phone; the loudness code was removed), the morphing loading indicator while Shazam answers; then the
     lyrics screen and search/history. One screen per pull request.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
@@ -331,8 +331,12 @@ repository belongs to someone else, these points still apply unless "Project kno
   off (a foreground service of type `microphone`; not needed, since one looks at the screen while singing
   along), and own fingerprinting with **Olaf** against the owner's music library as a fallback for Shazam (the
   owner has hardly any music files on the phone, and radio plays much that is not in one's library).
+- **Material 3 Expressive:** needs Material 3 1.5.0 or later (Compose BOM 2026.11.01); `LoadingIndicator`,
+  `MaterialShapes` and `RoundedPolygon.toShape()` need `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`,
+  `CircularWavyProgressIndicator` and the `*Emphasized` typography do not. A `Surface(onClick)` stretches its child
+  to its own size: wrap a smaller icon in a centred `Box`.
 - **Code layout:** one Gradle module `app` (Kotlin + Jetpack Compose), package and applicationId
-  `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk/targetSdk 37. All versions (AGP,
+  `io.github.drnerdlove.earacle`, minSdk 29 (Android 10), compileSdk 37.1 (`compileSdkMinor = 1`, needed by Compose 1.13), targetSdk 37. All versions (AGP,
   Kotlin, Compose BOM, libraries) live in `gradle/libs.versions.toml`; the Gradle version is in
   `gradle/wrapper/gradle-wrapper.properties`.
 - **Build and test:** `.github/workflows/build.yml` runs on every pull request (skipped when only `*.md`
@@ -386,6 +390,9 @@ repository belongs to someone else, these points still apply unless "Project kno
   signed-in GitHub user can download workflow artifacts (source: `github/docs`, download-workflow-artifacts).
   Only people with push access see draft releases (GitHub REST API description, releases).
 - **Traps:**
+  - A recording's progress callback can run after `goHome()` cancelled it (the blocking read finishes first).
+    Updates go through `listeningProgress` (`UiState.kt`), so a cancelled recording cannot bring the listening
+    screen back.
   - AGP 9 has built-in Kotlin: do **not** apply `org.jetbrains.kotlin.android`. AGP bundles an older Kotlin
     Gradle plugin; the root `build.gradle.kts` puts the catalog's Kotlin version on the buildscript classpath
     so it is used instead. Keep the Compose compiler plugin version equal to the Kotlin version.
