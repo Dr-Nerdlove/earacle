@@ -3,7 +3,7 @@
     <string name="app_name" translatable="false">Earacle</string>
     <string name="button_recognize">Recognize song</string>
     <string name="button_try_again">Try again</string>
-    <string name="start_headline">What's playing?</string>
+    <string name="start_headline">What’s playing?</string>
     <string name="hint_idle">Tap the button to recognize the song that is playing nearby.</string>
     <string name="status_listening">Listening…</string>
     <string name="status_relistening">Listening along…</string>

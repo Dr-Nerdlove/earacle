@@ -48,7 +48,7 @@ Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has no
 
 - At the top a rounded search bar "Search song" / "Song suchen" (like Google's own apps) that opens the search;
   the history icon sits at its end and opens the history.
-- A large emphasized headline: "What's playing?" / "Was läuft gerade?".
+- A large emphasized headline: "What’s playing?" / "Was läuft gerade?".
 - In the middle the big recognize button: a Material 3 Expressive shape with a wavy edge (9-scallop "cookie",
   `MaterialShapes.Cookie9Sided` if available), colour `primary`, the microphone icon in `onPrimary`. The button
   has an accessible label ("Recognize song" / "Lied erkennen").
@@ -63,7 +63,7 @@ has while listening, about 1.8 times a normal 24 dp icon, i.e. about 44 dp).
 
 | Phase | Title | What is shown |
 | --- | --- | --- |
-| Idle | "What's playing?" | The cookie-shaped button, at rest, microphone on it. |
+| Idle | "What’s playing?" | The cookie-shaped button, at rest, microphone on it. |
 | Recording, 12 s | "Listening…" / "Höre zu…" | **Only the microphone** (in `primary`, no button shape behind it) **and a wavy ring around it.** The ring fills clockwise from the top in the 12 s of the recording (`UiState.Listening.progress`). The height of its waves follows the loudness at the microphone: almost flat when silent, higher with the beat of the music, so one sees whether the music arrives. A faint full circle shows the track the ring fills. Hint below as now ("Hold the phone near the music." / "Halte das Handy nah an die Musik."). |
 | Waiting for Shazam, about 1-3 s | "Recognizing…" / "Erkenne…" | The ring disappears; the Material 3 Expressive loading indicator (shapes morphing into each other while turning, `LoadingIndicator`) in `primary`, the microphone in `onPrimary` on it, same size as before. |
 | Match | - | The lyrics screen. |
