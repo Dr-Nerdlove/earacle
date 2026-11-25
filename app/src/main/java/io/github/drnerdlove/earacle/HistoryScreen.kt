@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -181,6 +182,13 @@ private fun HistoryRow(
             }
         },
     )
+    // rememberSwipeToDismissBoxState is saveable, and the list keeps saved state per entry id: an entry that comes
+    // back through "Undo" would come back still swiped away (red, with the bin). Start every row settled.
+    LaunchedEffect(Unit) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+        }
+    }
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
