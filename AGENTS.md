@@ -252,6 +252,9 @@ repository belongs to someone else, these points still apply unless "Project kno
   - Karaoke features (decided 2026-11-24, all six built): `docs/karaoke-plan.md` plans six points (tap to
     sync, countdown, line fill, word timing, backing vocals, stage mode), one session and pull request each,
     in that order; it also records what real LRCLIB lyrics contain and what was decided against and why.
+    Points 1-6 are built (v0.5.0, v0.6.0). A second round (2026-11-25) plans point 7 (search a song by hand,
+    the fallback for Shazam), point 8 (recently heard songs) and point 9 (word and line times from LRCLIB's
+    `lyricsfile`, proposed, not yet agreed by the owner).
   - Listening along (built, `SongTracking` + `MainViewModel`): after a first match from the button, the app
     records 12 s again after a pause that grows while the same song keeps being confirmed (15 s, then
     45 s, then 105 s after a recognition finished: about 27 s, 1 min, 2 min between recordings; at most 45 s
@@ -371,6 +374,9 @@ repository belongs to someone else, these points still apply unless "Project kno
     entries agree on (or the closest to a known duration). Wrong lyrics are worse than none. Artists are compared as lists of names (split at `,` `&` `·` `/` `;` `+` and feat./with/and/et...): a
     match is the first artist of one side being among the names of the other, or equal names joined (LRCLIB spells
     multi-artist credits in many ways).
+  - LRCLIB answers carry more than `syncedLyrics`: `lyricsfile` (YAML with line start/end and word times,
+    format may still change) and `hasWordSync`. A check of `syncedLyrics` alone (2026-11-24) wrongly found no
+    word timing; look at every field of a real answer before concluding.
   - `lrclib.net` is not on the cloud environment's network allow-list by default; add the host (via the
     environment tools) to check the real API there.
 - **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
