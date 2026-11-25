@@ -8,12 +8,14 @@ example a radio), recognizes the song and shows its lyrics line by line, in sync
 The interface is in German and English and follows the phone's language.
 
 <p align="center">
-  <img src="docs/screenshots/start.png" alt="Start screen with the &quot;Recognize song&quot; button" width="270">
+  <img src="docs/screenshots/start.png" alt="Start screen: search bar, the headline &quot;What's playing?&quot;, the cookie-shaped microphone button and the recently heard songs" width="220">
   &nbsp;
-  <img src="docs/screenshots/lyrics.png" alt="A recognized song with its lyrics; the current line is highlighted" width="270">
+  <img src="docs/screenshots/listening.png" alt="While listening: a wavy ring around the microphone fills in the 12 seconds" width="220">
+  &nbsp;
+  <img src="docs/screenshots/lyrics.png" alt="A recognized song with its lyrics; the current line is highlighted" width="220">
 </p>
 
-<p align="center"><sub>Start screen and a recognized song (German interface). The other lyric lines are blurred
+<p align="center"><sub>Start screen, listening and a recognized song (German interface). The other lyric lines are blurred
 here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 
 ## Status
