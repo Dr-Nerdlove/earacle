@@ -407,6 +407,9 @@ repository belongs to someone else, these points still apply unless "Project kno
   - LRCLIB answers carry more than `syncedLyrics`: `lyricsfile` (YAML with line start/end and word times,
     format may still change) and `hasWordSync`. A check of `syncedLyrics` alone (2026-11-24) wrongly found no
     word timing; look at every field of a real answer before concluding.
+  - `rememberSwipeToDismissBoxState` is saveable, and a `LazyColumn` keeps saved state per item key: a deleted
+    history entry that came back through "Undo" stayed swiped away (red, with the bin; seen on the phone with
+    v0.8.0). `HistoryRow` snaps its state back to `Settled` when it enters the composition.
   - `lrclib.net` is not on the cloud environment's network allow-list by default; add the host (via the
     environment tools) to check the real API there.
 - **Limits of the environment:** the Claude Code cloud session has no Android SDK and cannot reach Google's
