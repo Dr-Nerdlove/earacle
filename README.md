@@ -18,7 +18,7 @@ here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 
 ## Status
 
-**Early stage (version 0.6.0).** Earacle recognizes a song from the microphone, shows its title, artist and
+**Early stage (version 0.7.0).** Earacle recognizes a song from the microphone, shows its title, artist and
 position, and shows the synced lyrics with the current line highlighted. It keeps listening along and follows
 song changes, but only while the app is open; the screen stays on meanwhile. Listening in the background (with
 the screen off) is not planned.
@@ -34,7 +34,7 @@ the screen off) is not planned.
   out one by one in the last 3 seconds, and the next line is shown a little brighter
 - The line being sung fills up from left to right in the highlight colour, at the pace it is sung (estimated
   from its length); wrapped lines fill one visual line after the other. Where the lyrics carry word times
-  (enhanced LRC), it jumps word by word on the real times; no time tags are ever shown as text
+  (LRCLIB's lyricsfile or enhanced LRC), it jumps word by word on the real times, and line ends are real too; no time tags are ever shown as text
 - Backing vocals (text in parentheses) are shown smaller and muted, so the lead line is easy to follow
 - Stage mode for singing along from a distance (button at the left of the sync button): black background, the
   current line very large in the middle, the next one smaller below it, everything else hidden; `A−` / `A+`
