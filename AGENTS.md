@@ -309,7 +309,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     than `SongHistory.SAME_SONG_GAP_MS` (10 min) is not added again. Opening an entry works like a song picked by
     hand (nothing highlighted until the first tap) and loads exactly its LRCLIB version through `/api/get/{id}`,
     else the normal lookup; it adds no entry. `allowBackup` stays true, so Android's backup includes the history.
-    Logic and file are unit-tested; the page works on the owner's phone (2026-11-25, v0.8.0). The undo fix (`HistoryRow`, v0.8.1, PR #47) is NOT yet confirmed on the phone.
+    Logic and file are unit-tested; the page works on the owner's phone (2026-11-25, v0.8.0). The undo fix (`HistoryRow`, v0.8.1, PR #47) is confirmed on the phone (owner, 2026-11-25).
   - Stronger fill colour (built, point 10, `lyrics/FillColour.kt`, `LocalLyricFill` in `MainActivity.kt`): `fillColour(primary,
     muted, background)` keeps `colorScheme.primary` when its CIE76 difference to the muted text
     (`onSurfaceVariant`) is at least `MIN_FILL_DIFFERENCE` (65, chosen by the owner from a preview); otherwise it takes the nearest colour of

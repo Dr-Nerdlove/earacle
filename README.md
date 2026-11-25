@@ -24,8 +24,7 @@ listening along and follows song changes, but only while the app is open; the sc
 Listening in the background (with the screen off) is not planned. All ten karaoke features of
 [`docs/karaoke-plan.md`](docs/karaoke-plan.md) are built (tap to sync, countdown, line fill, word timing,
 backing vocals, stage mode, search by hand, history, lyricsfile word times, stronger fill colour) and work on
-the author's phone. The fix for entries restored with "Undo" in the history (0.8.1) has not been confirmed on
-a phone yet. The app is made for one phone and one person's use; expect rough edges.
+the author's phone. The app is made for one phone and one person's use; expect rough edges.
 
 ## Features
 
