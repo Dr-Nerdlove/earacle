@@ -267,6 +267,19 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         )
         return
     }
+    // Back leaves stage mode, else returns to the start screen; on the start screen the system closes the app.
+    val found = state as? UiState.Found
+    val backAction = backAction(
+        isIdle = state is UiState.Idle,
+        stageShown = found != null && showsStageMode(stage.enabled, found.lyrics, found.clockRunning),
+    )
+    BackHandler(enabled = backAction != null) {
+        when (backAction) {
+            BackAction.LEAVE_STAGE -> viewModel.setStageMode(false)
+            BackAction.GO_HOME -> viewModel.goHome()
+            null -> Unit
+        }
+    }
     MainContent(
         state,
         onRecognize,

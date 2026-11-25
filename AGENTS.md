@@ -317,6 +317,10 @@ repository belongs to someone else, these points still apply unless "Project kno
     stage mode); none reaching 35 means the closest one. `EaracleTheme` computes it once per scheme and provides
     it as `LocalLyricFill`, used by the filling line, the current line and the countdown dots. The muted text is
     unchanged. Tested on the JVM (including the owner's palette); the owner confirmed on the phone (2026-11-25) that the colour now fits.
+  - Back gesture (built, `BackNavigation.kt`, `MainViewModel.goHome`): history and search close first; then back leaves
+    stage mode, else returns from any other screen to the start screen (stops a running recognition and listening
+    along; a lyrics lookup still running cannot bring the song back but still adds it to the history); on the start
+    screen back closes the app. The decision is the pure `backAction`, unit-tested.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
