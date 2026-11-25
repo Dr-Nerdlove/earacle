@@ -284,6 +284,9 @@ repository belongs to someone else, these points still apply unless "Project kno
     last word, also used by `estimatedLineEndMs`); repeated-timestamp lines keep no word times. `filledEndIndex`
     jumps word by word when a line has them, else uses the even pace. Not checked on real data (LRCLIB had none
     on 2026-11-24), only by tests. A mid-line `[..]` stamp used to stay in the text; that old test was replaced.
+  - Backing vocals (built, point 5, `lyrics/Backing.kt`): text in balanced, non-nested `( ... )` is drawn at
+    0.75 em in the muted colour (`lyricText` in `MainActivity.kt`), also in the line being sung. Unbalanced or
+    nested parentheses leave the whole line normal. Checked only by tests, not yet on a phone.
   - Possible later fallback: own fingerprinting with **Olaf** (open source) against the owner's music
     library, in case the unofficial Shazam API stops working.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple

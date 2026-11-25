@@ -30,7 +30,7 @@ singing, since one looks at the screen anyway).
 - [x] 2. Countdown before singing starts again - branch `feature/countdown`, PR #29
 - [x] 3. The current line fills up - branch `feature/line-fill`, PR #30
 - [x] 4. Word timing where the lyrics have it - branch `feature/word-timing`, PR #32
-- [ ] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`
+- [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #TBD
 - [ ] 6. Stage mode - branch `feature/stage-mode`
 
 ## Ground rules for all points
@@ -232,6 +232,12 @@ fill of point 3 keeps working on the same text layout.
 parentheses part as not backing.
 
 **On the phone:** a song with many backing parts; the lead line must stay easy to read.
+
+**Built (point 5):** `lyrics/Backing.kt` (`splitBacking`). Backing segments include their parentheses; an empty
+`()` counts as backing. Unbalanced or nested parentheses anywhere in a line leave the whole line normal. In
+`MainActivity.kt`, `lyricText` builds the `AnnotatedString` (size 0.75 em, muted colour) for every line, including
+the line being sung: there the backing part keeps its muted colour in the already sung part too, so it does not
+light up like the lead; the fill still runs over the same text. No new texts, so nothing to translate.
 
 ## 6. Stage mode
 
