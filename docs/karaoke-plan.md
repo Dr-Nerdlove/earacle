@@ -33,7 +33,7 @@ singing, since one looks at the screen anyway).
 - [x] 5. Backing vocals smaller and muted - branch `feature/backing-vocals`, PR #33
 - [x] 6. Stage mode - branch `feature/stage-mode`, PR #35
 - [ ] 7. Search a song by hand - branch `feature/manual-search`
-- [ ] 8. Recently heard songs - branch `feature/song-history`
+- [ ] 8. Song history page - branch `feature/song-history`
 - [x] 9. Real word and line times from LRCLIB's lyricsfile - branch `feature/lyricsfile` (agreed
   2026-11-25; done first, before 7 and 8; the owner chose SnakeYAML Engine as the YAML reader)
 
@@ -355,39 +355,73 @@ synced.
 change on time; search while in airplane mode (clear message); back gesture from the search; search from
 the "not recognized" screen; "Try again" after a picked song.
 
-## 8. Recently heard songs
+## 8. Song history
 
-**Why:** to call up a song again quickly (e.g. the same radio hit an hour later, or to sing it again), without
-listening or typing.
+**Why:** to see which songs were heard when, and to call one up again (e.g. the same radio hit an hour
+later, or to sing it again) without listening or typing. Decided with the owner on 2026-11-25: a page of its
+own, without a limit, with date and time.
 
 **What the owner sees:**
 
-- In the search screen of point 7, while the search field is empty: a list "Zuletzt gehört" / "Recently
-  heard" with the last 20 songs, newest first, recognized ones and those picked by hand, each with title,
-  artist and when (e.g. "heute 14:32" / "today 2:32 PM", or the date). A song that is already in the list is
-  not added twice; it moves to the top.
-- Tapping an entry opens it like a song picked by hand (point 7: the clock starts at the first tap).
-- A button "Verlauf löschen" / "Clear history" with a short confirmation.
+- A **"Verlauf" / "History"** button on the start screen and an icon button on the lyrics screen open the
+  history page; the system back gesture leaves it (`BackHandler`, no navigation library).
+- The page lists every entry, newest first, grouped by day with a heading: "Heute" / "Today", "Gestern" /
+  "Yesterday", otherwise the date in the phone's language ("Mo., 23. Nov." / "Mon, Nov 23"; with the year
+  when it is not the current one). Each entry shows the time (24 h or 12 h as the phone is set), title,
+  artist, and a small "von Hand" / "by hand" for songs picked in the search (point 7).
+- Tapping an entry opens the song like one picked by hand (point 7: the clock starts at the first tap on a
+  line). Opening a song from the history does not add a new entry.
+- **Swipe an entry to the side to delete it** (Material 3 `SwipeToDismissBox`, already part of the app's
+  libraries). A message "Eintrag gelöscht" / "Entry deleted" with **"Rückgängig" / "Undo"** stays for a few
+  seconds, since a swipe happens easily by mistake.
+- **"Verlauf löschen" / "Clear history"** on the page deletes everything, after a confirmation dialog.
+- The search screen of point 7 shows the last 5 songs while its field is empty, with **"Alle anzeigen" /
+  "Show all"** leading to the history page.
 
-**Data and privacy:** the list is kept on the phone only (SharedPreferences, as JSON with org.json, which
-Android already has; no new library), never sent anywhere and not logged. Stored per entry: title, artist,
-the time, and the LRCLIB `id` of the lyrics that were shown, if any. Opening an entry with an id loads
-exactly that version via `/api/get/{id}` (checked 2026-11-25: answers 200 with the same fields as a search
-result); without an id, the normal lookup by title and artist runs. The stored JSON has a format version, so
-a later change can carry the list over; broken or unknown data gives an empty list, never a crash.
+**When an entry is added:** once each time a song is recognized (by the button, or when listening along
+notices a different song), and when a song is picked in the search. Confirmations of the same song while
+listening along add nothing. To keep "Try again" during the same song from adding a duplicate, a song is not
+added again while the newest entry is the same song (normalized title and artist, as `SongTracking` /
+`LrclibApi.normalize` compare) and less than `SAME_SONG_GAP_MS` = 10 minutes old (tunable). Heard again
+later, it gets a new entry with the new time. The entry is written once the lyrics lookup for the song has
+finished (found or not), so it can carry the LRCLIB id; the id travels with the lyrics (an optional
+`lrclibId` on `Lyrics.Synced` / `Lyrics.Plain`, set from `LrclibTrack.id`, which point 7 adds).
 
-**Logic (pure, tested):** `SongHistory` with `add(entry, now)` (dedupe by normalized title and artist, move
-to top, keep 20), `clear()`, JSON to and from text; a `HistoryStore` interface like `StageStore`, with the
-SharedPreferences version next to `StagePreferences.kt`. When a song counts as "heard": once its lyrics have
-been looked up (recognized) or when it is picked (by hand).
+**Data and storage:**
 
-**Tests:** adding, moving to the top, the limit, dedupe with different spelling ("Atemlos" / "atemlos"),
-clear, JSON round trip, broken JSON and an unknown format version give an empty list, the `/api/get/{id}`
-URL. Sabotage: e.g. no limit, or no dedupe.
+- Kept on the phone in a file of its own in the app's files folder (`history.jsonl`): one JSON object per
+  line (org.json, which Android has; no new library), and a new entry is appended at the end, so adding stays
+  fast however long the history gets (about 200 bytes per entry: 10,000 songs are about 2 MB). Not in
+  SharedPreferences, which would read and rewrite everything on each change. Deleting one entry rewrites the
+  file without it; clearing deletes the file. File access off the main thread.
+- Per entry: a unique id (for deleting), the time (epoch ms), title, artist, source (recognized / by hand),
+  the LRCLIB id if known, and a format version `v`. A line that does not parse (e.g. cut off when the phone
+  died while writing) or has an unknown version is skipped; the other entries stay. Never a crash.
+- Opening an entry with an LRCLIB id loads exactly that version via `/api/get/{id}` (checked 2026-11-25:
+  answers 200 with the same fields as a search result); without an id, the normal lookup by title and artist
+  runs.
+- Privacy: the history never leaves the phone through the app and is not logged. The app keeps
+  `android:allowBackup="true"`, so Android's own backup includes the history in the owner's Google account
+  backup when backup is on for the phone, and it comes back on a new phone (the owner chose this on
+  2026-11-25). Uninstalling the app deletes it from the phone.
 
-**On the phone:** recognize two songs and pick one by hand, check the list and its order; open an entry;
-close and reopen the app (the list stays); clear it; install the update over the old version (the app
-starts with an empty list, nothing breaks).
+**Logic (pure, tested):** `SongHistory` (add with the duplicate rule, delete by id, undo a delete back to its
+place, clear), the line format to and from text, and `groupByDay(entries, now, zone, locale)` for the
+headings (with `java.time`, fixed zone and locale in tests). A `HistoryStore` interface, like `StageStore`,
+with the file version next to `StagePreferences.kt`.
+
+**Tests:** the duplicate rule (same song within 10 min skipped, after 10 min added, different spelling such
+as "Atemlos" / "atemlos" counts as the same, a different song in between is added), delete and undo, clear,
+round trip of the line format, a broken line and an unknown version are skipped while the rest stays, a cut
+off last line, 10,000 entries read back correctly, the day headings (today, yesterday, older, another year,
+just before and after midnight), the `/api/get/{id}` URL. Sabotage: e.g. no duplicate rule, or a broken line
+empties the whole history.
+
+**On the phone:** recognize a few songs and pick one by hand, check the page, the headings, the times and
+the "by hand" mark; let the app listen along through a song change (one new entry, not one per
+confirmation); "Try again" during the same song (no duplicate); open an entry; swipe one away and undo it,
+swipe one away for good; clear all; close and reopen the app (the history stays); install the update over
+the old version (starts with an empty history, nothing breaks).
 
 ## 9. Real word and line times from LRCLIB's lyricsfile
 
