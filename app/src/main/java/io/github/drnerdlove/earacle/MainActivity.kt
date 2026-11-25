@@ -84,6 +84,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextLayoutResult
@@ -97,6 +98,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import io.github.drnerdlove.earacle.lyrics.splitBacking
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -457,8 +464,9 @@ private fun ColumnScope.SyncedLyrics(
                     } else if (isCurrent && !isBlank) {
                         FillingLine(lines, index, positionAt)
                     } else {
+                        val muted = MaterialTheme.colorScheme.onSurfaceVariant
                         Text(
-                            text = if (isBlank) "♪" else line.text,
+                            text = if (isBlank) AnnotatedString("♪") else lyricText(line.text, muted),
                             style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isCurrent) FontWeight.Bold else null,
                             color = when {
@@ -480,6 +488,20 @@ private fun ColumnScope.SyncedLyrics(
     }
 }
 
+/** Size of backing vocals (text in parentheses) relative to the lead text. */
+private val BackingTextSize = 0.75.em
+
+/** [text] with its backing vocals ([splitBacking]) smaller and in [mutedColor]; the characters are unchanged. */
+private fun lyricText(text: String, mutedColor: Color): AnnotatedString = buildAnnotatedString {
+    for (segment in splitBacking(text)) {
+        if (segment.backing) {
+            withStyle(SpanStyle(fontSize = BackingTextSize, color = mutedColor)) { append(segment.text) }
+        } else {
+            append(segment.text)
+        }
+    }
+}
+
 /**
  * The line being sung: drawn in the highlight colour, with the part not sung yet recoloured to a muted
  * colour. The filled part grows at an even pace ([lineProgress]) and wraps with the text: each visual line
@@ -497,8 +519,10 @@ private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -
             withFrameMillis { frameTime = SystemClock.elapsedRealtime() }
         }
     }
-    val text = lines[index].text
+    val plain = lines[index].text
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    // Backing vocals stay muted and small even in the part already sung; the text itself is unchanged.
+    val text = lyricText(plain, muted)
     Text(
         text = text,
         style = MaterialTheme.typography.titleLarge,
@@ -514,7 +538,7 @@ private fun FillingLine(lines: List<LyricLine>, index: Int, positionAt: (Long) -
                 drawContent()
                 val textLayout = layout ?: return@drawWithContent
                 // The layout can still belong to the previous text for one frame.
-                if (textLayout.layoutInput.text.text != text) return@drawWithContent
+                if (textLayout.layoutInput.text.text != plain) return@drawWithContent
                 val filledEnd = filledEndIndex(latestLines, index, latestPositionAt(frameTime))
                 for (line in 0 until textLayout.lineCount) {
                     val lineEnd = textLayout.getLineEnd(line, visibleEnd = true)

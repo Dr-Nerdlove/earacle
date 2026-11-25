@@ -35,6 +35,7 @@ the screen off) is not built yet; see "Planned".
 - The line being sung fills up from left to right in the highlight colour, at the pace it is sung (estimated
   from its length); wrapped lines fill one visual line after the other. Where the lyrics carry word times
   (enhanced LRC), it jumps word by word on the real times; no time tags are ever shown as text
+- Backing vocals (text in parentheses) are shown smaller and muted, so the lead line is easy to follow
 - Shows plain lyrics, or a clear message, when no synced lyrics exist
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4
   recordings in a row without a match
@@ -43,8 +44,7 @@ the screen off) is not built yet; see "Planned".
 ## Planned
 
 - Listening with the screen off, in the background, through a foreground service
-- Karaoke features for singing along: backing vocals shown
-  smaller, and a stage mode with very large text (see [the plan](docs/karaoke-plan.md))
+- Karaoke features for singing along: a stage mode with very large text (see [the plan](docs/karaoke-plan.md))
 - Possible fallback recognition with Olaf against your own music library, in case the unofficial Shazam API
   stops working
 
