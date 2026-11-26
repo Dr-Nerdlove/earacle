@@ -56,7 +56,8 @@ the author's phone. The app is made for one phone and one person's use; expect r
   search bar of the start screen, which also shows the last three songs under "Recently heard"; clock button next
   to "Try again"), newest first, grouped by day, with the time.
   Tap an entry to open its lyrics again (exactly the version that was shown, then tap the line being sung);
-  swipe an entry to the side to delete it (with "Undo"), or clear everything. The search screen shows the last 5
+  swipe an entry to the side to delete it (with "Undo"), press and hold an entry to select several and delete
+  them with the bin at the top (also with "Undo"), or clear everything. The search screen shows the last 5
   songs while its field is empty. The history stays on the phone, without a limit, and is included in Android's
   own backup of the app
 - Listens along while the app is open: follows song changes, corrects drift, skips silence and stops after 4

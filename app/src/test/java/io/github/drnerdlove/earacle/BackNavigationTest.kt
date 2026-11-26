@@ -19,4 +19,14 @@ class BackNavigationTest {
     fun stageModeIsLeftFirst() {
         assertEquals(BackAction.LEAVE_STAGE, backAction(isIdle = false, stageShown = true))
     }
+
+    @Test
+    fun historyBackEndsTheSelectionFirst() {
+        assertEquals(HistoryBackAction.END_SELECTION, historyBackAction(selecting = true))
+    }
+
+    @Test
+    fun historyBackClosesThePageWithoutASelection() {
+        assertEquals(HistoryBackAction.CLOSE_HISTORY, historyBackAction(selecting = false))
+    }
 }

@@ -79,4 +79,45 @@ class HistoryLogTest {
         log.delete("zzz")
         assertEquals(listOf("a"), reloaded())
     }
+
+    @Test
+    fun deleteAllRewritesOnceAndOneUndoPutsAllBack() {
+        val store = CountingStore(FileHistoryStore(file()))
+        val log = HistoryLog(store)
+        listOf("a", "b", "c", "d").forEachIndexed { i, id -> log.record(entry(id, i * 20 * minute)) }
+        log.deleteAll(listOf("d", "a", "zzz"))
+        assertEquals(listOf("b", "c"), reloaded())
+        assertEquals(1, store.rewrites)
+        log.undoDelete()
+        assertEquals(listOf("a", "b", "c", "d"), reloaded())
+        assertEquals(listOf("a", "b", "c", "d"), log.history.entries.map { it.id })
+    }
+
+    @Test
+    fun aSingleDeleteAfterADeleteAllUndoesOnlyTheSingleOne() {
+        val log = HistoryLog(FileHistoryStore(file()))
+        listOf("a", "b", "c", "d").forEachIndexed { i, id -> log.record(entry(id, i * 20 * minute)) }
+        log.deleteAll(listOf("a", "b"))
+        log.delete("c")
+        log.undoDelete()
+        assertEquals(listOf("c", "d"), reloaded())
+    }
+
+    @Test
+    fun clearForgetsAMultiDelete() {
+        val log = HistoryLog(FileHistoryStore(file()))
+        listOf("a", "b").forEachIndexed { i, id -> log.record(entry(id, i * 20 * minute)) }
+        log.deleteAll(listOf("a", "b"))
+        log.clear()
+        log.undoDelete()
+        assertTrue(reloaded().isEmpty())
+    }
+
+    private class CountingStore(private val inner: HistoryStore) : HistoryStore by inner {
+        var rewrites = 0
+        override fun rewrite(entries: List<HistoryEntry>) {
+            rewrites++
+            inner.rewrite(entries)
+        }
+    }
 }
