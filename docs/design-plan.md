@@ -7,8 +7,7 @@ preview page made in that session (a private claude.ai artifact of the owner's:
 https://claude.ai/artifact/SznkPjaPNjAG9iNvpcZrg2; a later session can read it with the Artifact tool).
 
 Step 1 (start screen and listening animation) is built (PR #52; confirmed on the owner's phone 2026-11-25); step 2
-(lyrics screen, and bold start headlines) is built on `feature/lyrics-screen-expressive` (2026-11-26, not yet tried on
-the phone). Step 1 needs
+(lyrics screen, and bold start headlines) is built (PR #55; confirmed on the owner's phone 2026-11-26). Step 1 needs
 Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has none of the Expressive components
 (checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
 `MaterialExpressiveTheme` is internal). Step 3 is not built yet.
