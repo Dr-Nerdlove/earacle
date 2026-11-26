@@ -325,6 +325,8 @@ repository belongs to someone else, these points still apply unless "Project kno
     (proposal B of three): start screen with a cookie-shaped recognize button, a wavy ring around the microphone
     while recording (standard Material 3 Expressive wave, not the loudness: owner's decision 2026-11-25 after trying it on the phone; the loudness code was removed), the morphing loading indicator while Shazam answers; then the
     lyrics screen and search/history. One screen per pull request.
+    Step 2 (lyrics screen: song card, emphasized current and next line, floating toolbar; bold start headlines) is
+    built (2026-11-26, branch `feature/lyrics-screen-expressive`); see "As built (step 2)" in the plan.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
