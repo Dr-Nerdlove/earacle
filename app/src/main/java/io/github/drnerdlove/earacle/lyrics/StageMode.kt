@@ -69,3 +69,11 @@ fun stageLines(lines: List<LyricLine>, positionMs: Long): StageLines {
     while (next < lines.size && lines[next].text.isBlank()) next++
     return StageLines(current, if (next < lines.size) next else null)
 }
+
+/**
+ * The line the normal lyrics screen shows a little larger and brighter than the rest: the next line with text
+ * after the one being sung ([stageLines]), or null at the end of the song. A song picked by hand whose clock has
+ * not started yet ([clockRunning] false) highlights nothing, so it previews nothing either.
+ */
+fun upcomingLineIndex(lines: List<LyricLine>, positionMs: Long, clockRunning: Boolean): Int? =
+    if (clockRunning) stageLines(lines, positionMs).nextIndex else null

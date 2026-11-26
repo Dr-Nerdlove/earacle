@@ -6,10 +6,11 @@ from the album cover). Mock-ups of all three, the three loading animations and t
 preview page made in that session (a private claude.ai artifact of the owner's:
 https://claude.ai/artifact/SznkPjaPNjAG9iNvpcZrg2; a later session can read it with the Artifact tool).
 
-Step 1 (start screen and listening animation) is built (PR #52; confirmed on the owner's phone 2026-11-25); it needs
+Step 1 (start screen and listening animation) is built (PR #52; confirmed on the owner's phone 2026-11-25); step 2
+(lyrics screen, and bold start headlines) is built (PR #55; confirmed on the owner's phone 2026-11-26). Step 1 needs
 Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has none of the Expressive components
 (checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
-`MaterialExpressiveTheme` is internal). Steps 2 and 3 are not built yet.
+`MaterialExpressiveTheme` is internal). Step 3 is not built yet.
 
 ## Why it looked dated
 
@@ -94,6 +95,20 @@ indicator may stay still.
 - At the bottom a floating toolbar (pill shaped) with history, stage mode, back to the current line (only while
   scrolled away), and the main action "Try again" / "Nochmal" as its emphasized button. The "Search song" button
   for songs without synced lyrics stays reachable.
+
+### As built (step 2)
+
+- `SongCard` in `MainActivity.kt`: `Surface` in `surfaceContainer`, 24 dp corners, back arrow (`ic_arrow_back`,
+  label "Back to start" / "Zurück zum Start", calls `MainViewModel.goHome` like the back gesture), title in
+  `titleLargeEmphasized` + bold, artist in `bodyMedium`, badge "Listening along" / "Hört mit" in the tertiary
+  container colours while `UiState.Found.relistening`. The position and the ±0.5 s row stay below the card.
+- Current line `headlineSmallEmphasized` (24 sp) + bold, in the fill and the plain highlighted text; it wraps (no
+  `maxLines`). The next line with text (`upcomingLineIndex` in `lyrics/StageMode.kt`, unit-tested; none while a
+  song picked by hand has no clock) is `titleLarge` in `onSurface` at 75 % (full `onSurface` during a countdown).
+- `HorizontalFloatingToolbar` (stable in Material 3 1.5.0, no opt-in) over the bottom of the lyrics, 16 dp above
+  the edge: history, stage mode, search (only for songs without synced lyrics), back to the current line (only
+  while scrolled away), and "Try again" as a `Button` with the microphone in its trailing content. Synced lyrics
+  scroll beneath it; messages and plain lyrics keep `ToolbarReserve` (64 + 16 dp) free.
 
 ## 3. Search and history
 

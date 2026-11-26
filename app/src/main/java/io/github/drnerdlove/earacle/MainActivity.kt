@@ -39,9 +39,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,6 +81,7 @@ import io.github.drnerdlove.earacle.lyrics.SyncShift
 import io.github.drnerdlove.earacle.lyrics.nextTextSize
 import io.github.drnerdlove.earacle.lyrics.showsStageMode
 import io.github.drnerdlove.earacle.lyrics.stageLines
+import io.github.drnerdlove.earacle.lyrics.upcomingLineIndex
 import io.github.drnerdlove.earacle.lyrics.formatShift
 import io.github.drnerdlove.earacle.lyrics.syncedPositionMs
 import io.github.drnerdlove.earacle.lyrics.Lyrics
@@ -297,6 +301,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         onStageTextSize = viewModel::changeStageTextSize,
         recent = history.newestFirst().take(START_RECENT_COUNT),
         onOpenRecent = viewModel::openFromHistory,
+        onBack = viewModel::goHome,
     )
 }
 
@@ -320,6 +325,8 @@ fun MainContent(
     /** The newest songs of the history, shown on the start screen. */
     recent: List<HistoryEntry> = emptyList(),
     onOpenRecent: (HistoryEntry) -> Unit = {},
+    /** The back arrow of the lyrics screen: the same as the back gesture there (to the start screen). */
+    onBack: () -> Unit = {},
 ) {
     val busy = state is UiState.Listening || state is UiState.Recognizing
     val retry = state is UiState.NotFound || state is UiState.Error ||
@@ -340,81 +347,45 @@ fun MainContent(
         return
     }
     if (state is UiState.Found) {
-        // Compact header at the top, lyrics take all remaining space, button always visible.
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // Synced lyrics follow the current line until the user scrolls them by hand; the round
-            // button next to "Try again" brings them back. A new song follows again.
-            val syncedLines = (state.lyrics as? Lyrics.Synced)?.lines
-            var following by remember(syncedLines) { mutableStateOf(true) }
-            FoundContent(
-                state,
-                following,
-                onScrolledByHand = { following = false },
-                onTapLine = { timeMs -> if (onTapLine(timeMs)) following = true },
-                onNudge = onNudge,
-                onResetShift = onResetShift,
+        // The song card at the top, the lyrics in all remaining space, a floating toolbar at the bottom.
+        val syncedLines = (state.lyrics as? Lyrics.Synced)?.lines
+        // Synced lyrics follow the current line until the user scrolls them by hand; the sync button in the
+        // toolbar brings them back. A new song follows again.
+        var following by remember(syncedLines) { mutableStateOf(true) }
+        Box(modifier = modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                FoundContent(
+                    state,
+                    following,
+                    onBack = onBack,
+                    onScrolledByHand = { following = false },
+                    onTapLine = { timeMs -> if (onTapLine(timeMs)) following = true },
+                    onNudge = onNudge,
+                    onResetShift = onResetShift,
+                )
+            }
+            LyricsToolbar(
+                retryLabel = buttonLabel,
+                busy = busy,
+                showStage = syncedLines != null && state.clockRunning,
+                showBackToCurrent = syncedLines != null && !following,
+                // Without synced lyrics a better version can be searched by hand (not while they are still loading).
+                showSearch = state.lyrics != null && state.lyrics !is Lyrics.Synced,
+                onRecognize = onRecognize,
+                onHistory = onHistory,
+                onStage = { onStageChange(true) },
+                onBackToCurrent = { following = true },
+                onSearch = onSearch,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = ToolbarBottomMargin),
             )
-            Spacer(Modifier.height(12.dp))
-            Box(modifier = Modifier.fillMaxWidth()) {
-                // "Try again" stays centred; the round button sits at the end of the same row
-                // and is exactly as high as it.
-                Button(
-                    onClick = onRecognize,
-                    enabled = !busy,
-                    modifier = Modifier.align(Alignment.Center),
-                ) { Text(buttonLabel) }
-                Row(
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilledTonalIconButton(
-                        onClick = onHistory,
-                        shape = CircleShape,
-                        modifier = Modifier.size(ButtonDefaults.MinHeight),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_history),
-                            contentDescription = stringResource(R.string.history_open),
-                        )
-                    }
-                    if (syncedLines != null && state.clockRunning) {
-                        // Stage mode: very large lyrics for singing along from a distance.
-                        FilledTonalIconButton(
-                            onClick = { onStageChange(true) },
-                            shape = CircleShape,
-                            modifier = Modifier.size(ButtonDefaults.MinHeight),
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_fullscreen),
-                                contentDescription = stringResource(R.string.stage_enter),
-                            )
-                        }
-                    }
-                }
-                if (syncedLines != null && !following) {
-                    FilledTonalIconButton(
-                        onClick = { following = true },
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(ButtonDefaults.MinHeight),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_sync),
-                            contentDescription = stringResource(R.string.lyrics_back_to_current),
-                        )
-                    }
-                }
-            }
-            // Without synced lyrics a better version can be searched by hand (not while they are still loading).
-            if (state.lyrics != null && state.lyrics !is Lyrics.Synced) {
-                TextButton(onClick = onSearch) { Text(stringResource(R.string.search_open)) }
-            }
         }
         return
     }
@@ -461,36 +432,24 @@ private fun rememberPositionAt(state: UiState.Found): (Long) -> Long = remember(
 private fun ColumnScope.FoundContent(
     state: UiState.Found,
     following: Boolean,
+    onBack: () -> Unit,
     onScrolledByHand: () -> Unit,
     onTapLine: (Long) -> Unit,
     onNudge: (Long) -> Unit,
     onResetShift: () -> Unit,
 ) {
-    val match: RecognitionResult.Match = state.match
     val now = rememberNowMs(state)
     val positionAt = rememberPositionAt(state)
     val positionMs = positionAt(now)
     val position = formatPosition(positionMs / 1000.0)
     // No app name above the song: the lyrics get the space.
-    Text(
-        displayTitle(match.title),
-        style = MaterialTheme.typography.headlineSmall,
-        textAlign = TextAlign.Center,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-    )
-    Text(
-        match.artist,
-        style = MaterialTheme.typography.titleMedium,
-        textAlign = TextAlign.Center,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-    )
+    SongCard(state.match, relistening = state.relistening, onBack = onBack)
     Spacer(Modifier.height(4.dp))
     if (state.clockRunning) {
         Text(
             stringResource(R.string.position_in_song, position),
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else if (state.lyrics is Lyrics.Synced) {
         // A song picked by hand: the clock starts with the first tap on a line.
@@ -501,18 +460,149 @@ private fun ColumnScope.FoundContent(
             textAlign = TextAlign.Center,
         )
     }
-    if (state.relistening) {
-        Text(
-            stringResource(R.string.status_relistening),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
     if (state.lyrics is Lyrics.Synced && state.clockRunning) {
         ShiftRow(state.shiftMs, onNudge, onResetShift)
     }
-    Spacer(Modifier.height(8.dp))
     LyricsArea(state.lyrics, positionMs, state.clockRunning, positionAt, following, onScrolledByHand, onTapLine)
+}
+
+/** Corner radius of the song card at the top of the lyrics screen. */
+private val SongCardCorner = 24.dp
+
+/**
+ * The rounded card at the top of the lyrics screen: a back arrow (to the start screen, like the back gesture),
+ * the title in an emphasized style with the artist below, and a small "listening along" badge while the app
+ * keeps checking the song.
+ */
+@Composable
+private fun SongCard(match: RecognitionResult.Match, relistening: Boolean, onBack: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(SongCardCorner),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = stringResource(R.string.lyrics_go_home),
+                )
+            }
+            Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+                Text(
+                    displayTitle(match.title),
+                    style = MaterialTheme.typography.titleLargeEmphasized,
+                    // The emphasized style alone looks like the normal weight under MaterialTheme.
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    match.artist,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (relistening) {
+                Spacer(Modifier.width(8.dp))
+                ListeningBadge()
+            }
+        }
+    }
+}
+
+/** "Listening along" as a small pill with a dot, in the tertiary colours. */
+@Composable
+private fun ListeningBadge() {
+    val colors = MaterialTheme.colorScheme
+    Surface(shape = CircleShape, color = colors.tertiaryContainer, contentColor = colors.onTertiaryContainer) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .drawBehind { drawCircle(colors.onTertiaryContainer) },
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.status_relistening), style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+/** Space between the floating toolbar and the bottom of the screen. */
+private val ToolbarBottomMargin = 16.dp
+
+/**
+ * Room the floating toolbar takes at the bottom (its height and margin). Content that must not hide behind it
+ * (plain lyrics, messages) ends this far above the bottom; synced lyrics scroll beneath it.
+ */
+private val ToolbarReserve = 64.dp + ToolbarBottomMargin
+
+/**
+ * The pill-shaped toolbar floating over the bottom of the lyrics: history, stage mode, search by hand (songs
+ * without synced lyrics), back to the current line (only while scrolled away), and "Try again" as its
+ * emphasized main button.
+ */
+@Composable
+private fun LyricsToolbar(
+    retryLabel: String,
+    busy: Boolean,
+    showStage: Boolean,
+    showBackToCurrent: Boolean,
+    showSearch: Boolean,
+    onRecognize: () -> Unit,
+    onHistory: () -> Unit,
+    onStage: () -> Unit,
+    onBackToCurrent: () -> Unit,
+    onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    HorizontalFloatingToolbar(
+        expanded = true,
+        modifier = modifier,
+        trailingContent = {
+            Spacer(Modifier.width(4.dp))
+            Button(onClick = onRecognize, enabled = !busy) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_mic),
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                Text(retryLabel, fontWeight = FontWeight.Bold)
+            }
+        },
+    ) {
+        IconButton(onClick = onHistory) {
+            Icon(painterResource(R.drawable.ic_history), contentDescription = stringResource(R.string.history_open))
+        }
+        if (showStage) {
+            // Stage mode: very large lyrics for singing along from a distance.
+            IconButton(onClick = onStage) {
+                Icon(painterResource(R.drawable.ic_fullscreen), contentDescription = stringResource(R.string.stage_enter))
+            }
+        }
+        if (showSearch) {
+            IconButton(onClick = onSearch) {
+                Icon(painterResource(R.drawable.ic_search), contentDescription = stringResource(R.string.search_open))
+            }
+        }
+        if (showBackToCurrent) {
+            IconButton(onClick = onBackToCurrent) {
+                Icon(
+                    painterResource(R.drawable.ic_sync),
+                    contentDescription = stringResource(R.string.lyrics_back_to_current),
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -526,21 +616,22 @@ private fun ColumnScope.LyricsArea(
     onTapLine: (Long) -> Unit,
 ) {
     when (lyrics) {
-        null -> CenteredInRemainingSpace { CircularProgressIndicator() }
-        Lyrics.NotFound -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_not_found)) }
-        Lyrics.Instrumental -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_instrumental)) }
-        Lyrics.Failure -> CenteredInRemainingSpace { Hint(stringResource(R.string.lyrics_error)) }
+        null -> CenteredInRemainingSpace(ToolbarReserve) { CircularProgressIndicator() }
+        Lyrics.NotFound -> CenteredInRemainingSpace(ToolbarReserve) { Hint(stringResource(R.string.lyrics_not_found)) }
+        Lyrics.Instrumental -> CenteredInRemainingSpace(ToolbarReserve) { Hint(stringResource(R.string.lyrics_instrumental)) }
+        Lyrics.Failure -> CenteredInRemainingSpace(ToolbarReserve) { Hint(stringResource(R.string.lyrics_error)) }
         is Lyrics.Plain -> PlainLyrics(lyrics.text)
         is Lyrics.Synced -> SyncedLyrics(lyrics.lines, positionMs, clockRunning, positionAt, following, onScrolledByHand, onTapLine)
     }
 }
 
 @Composable
-private fun ColumnScope.CenteredInRemainingSpace(content: @Composable () -> Unit) {
+private fun ColumnScope.CenteredInRemainingSpace(bottomSpace: Dp = 0.dp, content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .weight(1f)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(bottom = bottomSpace),
         contentAlignment = Alignment.Center,
     ) { content() }
 }
@@ -561,6 +652,8 @@ private fun ColumnScope.SyncedLyrics(
     val pause = if (clockRunning) countdown(lines, positionMs) else null
     // The dots stand at the line being sung, or above the first line before it starts.
     val dotsHost = maxOf(current, 0)
+    // The next line to sing is a little larger and brighter than the rest.
+    val upcoming = upcomingLineIndex(lines, positionMs, clockRunning)
     val listState = rememberLazyListState()
     // The effect below outlives recompositions; always call the latest callback.
     val currentOnScrolledByHand by rememberUpdatedState(onScrolledByHand)
@@ -621,17 +714,23 @@ private fun ColumnScope.SyncedLyrics(
                     if (isDotsHost && isBlank && pause != null) {
                         CountdownSlot(true, lines, positionAt)
                     } else if (isCurrent && !isBlank) {
-                        FillingLine(lines, index, positionAt)
+                        FillingLine(lines, index, positionAt, currentLineStyle())
                     } else {
                         val muted = MaterialTheme.colorScheme.onSurfaceVariant
+                        val isUpcoming = index == upcoming && !isBlank
                         Text(
                             text = if (isBlank) AnnotatedString("♪") else lyricText(line.text, muted),
-                            style = if (isCurrent) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                            style = when {
+                                isCurrent -> currentLineStyle()
+                                isUpcoming -> MaterialTheme.typography.titleLarge
+                                else -> MaterialTheme.typography.bodyLarge
+                            },
                             fontWeight = if (isCurrent) FontWeight.Bold else null,
                             color = when {
                                 isCurrent -> LocalLyricFill.current
-                                // The next line to sing is already a little brighter during the countdown.
-                                pause != null && index == pause.nextIndex -> MaterialTheme.colorScheme.onSurface
+                                // Brighter during the countdown, so the eye finds where singing starts again.
+                                isUpcoming && pause != null && index == pause.nextIndex -> MaterialTheme.colorScheme.onSurface
+                                isUpcoming -> MaterialTheme.colorScheme.onSurface.copy(alpha = UpcomingLineAlpha)
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             textAlign = TextAlign.Center,
@@ -646,6 +745,17 @@ private fun ColumnScope.SyncedLyrics(
         }
     }
 }
+
+/** How bright the next line is between the muted lines and the full text colour. */
+private const val UpcomingLineAlpha = 0.75f
+
+/**
+ * The line being sung on the normal screen: large and bold (emphasized typography). It wraps like every other
+ * line, never gets cut. The emphasized style alone looks like the normal weight under MaterialTheme, so the
+ * weight is set explicitly where it is used.
+ */
+@Composable
+private fun currentLineStyle(): TextStyle = MaterialTheme.typography.headlineSmallEmphasized
 
 /** Size of backing vocals (text in parentheses) relative to the lead text. */
 private val BackingTextSize = 0.75.em
@@ -1009,7 +1119,9 @@ private fun ColumnScope.PlainLyrics(text: String) {
         modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            // The last lines can scroll out from under the floating toolbar.
+            .padding(bottom = ToolbarReserve),
     )
 }
 
