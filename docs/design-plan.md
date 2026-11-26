@@ -7,10 +7,11 @@ preview page made in that session (a private claude.ai artifact of the owner's:
 https://claude.ai/artifact/SznkPjaPNjAG9iNvpcZrg2; a later session can read it with the Artifact tool).
 
 Step 1 (start screen and listening animation) is built (PR #52; confirmed on the owner's phone 2026-11-25); step 2
-(lyrics screen, and bold start headlines) is built (PR #55; confirmed on the owner's phone 2026-11-26). Step 1 needs
+(lyrics screen, and bold start headlines) is built (PR #55; confirmed on the owner's phone 2026-11-26). Step 3
+(search and history) is built, not yet tried on the phone. Step 1 needs
 Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has none of the Expressive components
 (checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
-`MaterialExpressiveTheme` is internal). Step 3 is not built yet.
+`MaterialExpressiveTheme` is internal).
 
 ## Why it looked dated
 
@@ -116,6 +117,23 @@ indicator may stay still.
 - The search field rounded like the search bar on the start screen.
 - Result and history entries as rounded list items; swipe to delete and "Undo" in the history stay as they are
   (keep the `HistoryRow` fix for the swipe state).
+
+### As built (step 3)
+
+- `PageTopBar` in `PageParts.kt`: a plain 64 dp row (back arrow with the label "Back" / "Zurück", title in
+  `titleLargeEmphasized` + bold, actions at the end), not `TopAppBar`, because the `Scaffold` in `MainActivity`
+  already keeps the status bar free (a `TopAppBar` would add the status bar height a second time). The arrow calls
+  the same function as the back gesture; `BackHandler` and `BackNavigation.kt` are unchanged.
+- Search: title "Search song" / "Song suchen"; the field is a `TextField` with `CircleShape` in
+  `surfaceContainerHigh` without the underline, a search icon at the start and the old label as placeholder, like
+  the search bar on the start screen. The "Search" button below stays.
+- Rounded list items ("segmented" groups): `segmentShape` (20 dp corners at the outer ends of a group, 6 dp
+  between items, 2 dp gap; the corner choice is the pure, unit-tested `segmentCorners` in `ListSegment.kt`) in
+  `surfaceContainer`, used by the search results, the recent songs on the search page, the history (one group per
+  day) and the "Recently heard" list on the start screen.
+- History: "Clear history" moved into the top bar; the separate headline is gone (the title is in the bar). The
+  swipe box is clipped to the item's shape, so the red background with the bin is rounded too; the `HistoryRow`
+  settle fix stays.
 
 ## Not chosen
 
