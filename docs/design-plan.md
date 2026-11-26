@@ -153,7 +153,8 @@ source what the Material 3 version in the Compose BOM offers for selectable list
   the mode itself is the app's own.
 - **Rows** (`HistoryRow`): `SegmentedListItem` with the click overload normally and the `checked` overload while
   selecting; shape from `segmentShape`, container `surfaceContainer` as before. A selected row shows a check mark in a
-  filled circle in place of the time. Swiping stays (with "Undo") and is switched off while selecting
+  filled circle under the time (owner, after trying it on the phone: the time must stay visible); title and artist
+  are centred vertically. Swiping stays (with "Undo") and is switched off while selecting
   (`gesturesEnabled`); the snap-back fix for the swipe state stays.
 - **Selection mode:** a long press selects an entry; taps then add or remove entries, and removing the last one ends
   the mode. The top bar shows "N selected", the arrow ends the selection, and a bin replaces "Clear history". The bin

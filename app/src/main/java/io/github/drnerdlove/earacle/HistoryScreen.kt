@@ -227,7 +227,7 @@ fun HistoryScreen(
 /**
  * One entry as a rounded list item: time, title, artist and a small mark for a song picked by hand. Swipe to the
  * side deletes it; the red background behind it has the same [shape]. A long press starts the selection; while
- * [selecting], a tap toggles the entry (a selected one shows a check mark in place of the time) and swiping is off.
+ * [selecting], a tap toggles the entry (a selected one shows a check mark under the time) and swiping is off.
  */
 @Composable
 private fun HistoryRow(
@@ -286,27 +286,31 @@ private fun HistoryRow(
     ) {
         val shapes = ListItemDefaults.shapes(shape = shape)
         val colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        // The time always shows; a selected entry has the check mark under it. Time plus check mark (20 + 2 + 22 dp)
+        // are as tall as title and artist, so selecting does not make the row taller.
         val leading: @Composable () -> Unit = {
-            if (selecting && selected) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_check),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            } else {
+            Column {
                 Text(
                     time,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (selecting && selected) {
+                    Spacer(Modifier.height(2.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_check),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
             }
         }
         val title: @Composable () -> Unit = {
@@ -337,7 +341,7 @@ private fun HistoryRow(
                 modifier = Modifier.fillMaxWidth(),
                 leadingContent = { Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterStart) { leading() } },
                 supportingContent = supporting,
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
                 onLongClick = onToggle,
                 onLongClickLabel = selectLabel,
                 colors = colors,
@@ -350,7 +354,7 @@ private fun HistoryRow(
                 modifier = Modifier.fillMaxWidth(),
                 leadingContent = { Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterStart) { leading() } },
                 supportingContent = supporting,
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
                 onLongClick = onStartSelection,
                 onLongClickLabel = selectLabel,
                 colors = colors,
