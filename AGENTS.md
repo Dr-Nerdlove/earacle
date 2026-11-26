@@ -331,7 +331,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     (PR #56, works on the owner's phone 2026-11-26); see "As built (step 3)" in the plan. Long-press selection in the
     history (decided 2026-11-26, alongside swiping) is built (`history/HistorySelection.kt`, `historyBackAction`,
     `SongHistory.deleteAll`/`restoreAll`, `HistoryLog.deleteAll` with one "Undo" for all; rows are Material 3's
-    `SegmentedListItem`); not yet tried on the phone. See "As built (selection)" in the plan.
+    `SegmentedListItem`; PR #57, works on the owner's phone 2026-11-26). See "As built (selection)" in the plan.
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
