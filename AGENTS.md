@@ -321,7 +321,7 @@ repository belongs to someone else, these points still apply unless "Project kno
     stage mode, else returns from any other screen to the start screen (stops a running recognition and listening
     along; a lyrics lookup still running cannot bring the song back but still adds it to the history); on the start
     screen back closes the app. The decision is the pure `backAction`, unit-tested.
-  - Design (decided 2026-11-25; step 1 built, PR #52, works on the owner's phone 2026-11-25): `docs/design-plan.md` plans the move to Material 3 Expressive
+  - Design (decided 2026-11-25; all steps built and released in v1.0.0; step 1 built, PR #52, works on the owner's phone 2026-11-25): `docs/design-plan.md` plans the move to Material 3 Expressive
     (proposal B of three): start screen with a cookie-shaped recognize button, a wavy ring around the microphone
     while recording (standard Material 3 Expressive wave, not the loudness: owner's decision 2026-11-25 after trying it on the phone; the loudness code was removed), the morphing loading indicator while Shazam answers; then the
     lyrics screen and search/history. One screen per pull request.
@@ -337,7 +337,9 @@ repository belongs to someone else, these points still apply unless "Project kno
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen
   off (a foreground service of type `microphone`; not needed, since one looks at the screen while singing
   along), and own fingerprinting with **Olaf** against the owner's music library as a fallback for Shazam (the
-  owner has hardly any music files on the phone, and radio plays much that is not in one's library).
+  owner has hardly any music files on the phone, and radio plays much that is not in one's library). Dropped by
+  the owner on 2026-11-26: design proposal C (album cover and colours taken from it on the lyrics screen; no real
+  benefit for singing along, risks the readability of the sung line, see "Not chosen" in `docs/design-plan.md`).
 - **Material 3 Expressive:** needs Material 3 1.5.0 or later (Compose BOM 2026.11.01); `LoadingIndicator`,
   `MaterialShapes` and `RoundedPolygon.toShape()` need `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`,
   `CircularWavyProgressIndicator` and the `*Emphasized` typography do not. A `Surface(onClick)` stretches its child
