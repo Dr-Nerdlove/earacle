@@ -2,10 +2,10 @@ package io.github.drnerdlove.earacle
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +22,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -37,6 +38,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -56,7 +59,7 @@ import kotlinx.coroutines.launch
 /**
  * The history page (point 8): every song heard or picked, newest first, grouped by day. Tap opens a song, a swipe
  * to the side deletes it (with "Undo"), "Clear history" deletes everything after a confirmation. The system back
- * gesture is handled by the caller ([MainScreen]); the "Back" button here does the same.
+ * gesture is handled by the caller ([MainScreen]); the arrow in the top bar does the same.
  *
  * @param entries newest first.
  */
@@ -83,27 +86,27 @@ fun HistoryScreen(
     val timeFormat = remember(context) { DateFormat.getTimeFormat(context) }
 
     Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageTopBar(
+                title = stringResource(R.string.history_title),
+                backLabel = stringResource(R.string.history_back),
+                onBack = onBack,
             ) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.history_back)) }
                 if (entries.isNotEmpty()) {
                     TextButton(onClick = { confirmClear = true }) { Text(stringResource(R.string.history_clear)) }
                 }
             }
-            Text(
-                stringResource(R.string.history_title),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
             if (entries.isEmpty()) {
                 Spacer(Modifier.height(16.dp))
-                Hint(stringResource(R.string.history_empty))
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                    Hint(stringResource(R.string.history_empty))
+                }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(SegmentGap),
+                ) {
                     for (group in groups) {
                         item(key = "day-${group.date}") {
                             val heading = when (group.kind) {
@@ -115,13 +118,14 @@ fun HistoryScreen(
                                 heading,
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                                modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 6.dp),
                             )
                         }
-                        items(group.entries, key = { it.id }) { entry ->
+                        itemsIndexed(group.entries, key = { _, entry -> entry.id }) { index, entry ->
                             HistoryRow(
                                 entry = entry,
                                 time = timeFormat.format(Date(entry.timeMs)),
+                                shape = segmentShape(index, group.entries.size),
                                 onOpen = { onOpen(entry) },
                                 onDelete = {
                                     onDelete(entry.id)
@@ -163,11 +167,15 @@ fun HistoryScreen(
     }
 }
 
-/** One entry: time, title, artist and a small mark for a song picked by hand. Swipe to the side deletes it. */
+/**
+ * One entry as a rounded list item: time, title, artist and a small mark for a song picked by hand. Swipe to the
+ * side deletes it; the red background behind it has the same [shape].
+ */
 @Composable
 private fun HistoryRow(
     entry: HistoryEntry,
     time: String,
+    shape: Shape,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -191,6 +199,7 @@ private fun HistoryRow(
     }
     SwipeToDismissBox(
         state = dismissState,
+        modifier = Modifier.clip(shape),
         backgroundContent = {
             Box(
                 modifier = Modifier
@@ -211,34 +220,37 @@ private fun HistoryRow(
             }
         },
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .clickable(onClick = onOpen)
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.Top,
+        Surface(
+            onClick = onOpen,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = shape,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(
-                time,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(64.dp),
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(displayTitle(entry.title), style = MaterialTheme.typography.titleMedium)
-                val artistLine = if (entry.byHand) {
-                    listOf(entry.artist, stringResource(R.string.history_by_hand)).filter { it.isNotBlank() }.joinToString(" · ")
-                } else {
-                    entry.artist
-                }
-                if (artistLine.isNotBlank()) {
-                    Text(
-                        artistLine,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Normal,
-                    )
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Text(
+                    time,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(64.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(displayTitle(entry.title), style = MaterialTheme.typography.titleMedium)
+                    val artistLine = if (entry.byHand) {
+                        listOf(entry.artist, stringResource(R.string.history_by_hand)).filter { it.isNotBlank() }.joinToString(" · ")
+                    } else {
+                        entry.artist
+                    }
+                    if (artistLine.isNotBlank()) {
+                        Text(
+                            artistLine,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Normal,
+                        )
+                    }
                 }
             }
         }

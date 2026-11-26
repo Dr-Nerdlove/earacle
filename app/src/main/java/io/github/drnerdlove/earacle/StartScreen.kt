@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -315,7 +314,7 @@ private fun RecentList(recent: List<HistoryEntry>, onOpen: (HistoryEntry) -> Uni
     val timeFormat = remember(context) { DateFormat.getTimeFormat(context) }
     val now = remember(recent) { System.currentTimeMillis() }
     val yesterday = stringResource(R.string.history_yesterday)
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SegmentGap)) {
         Text(
             stringResource(R.string.history_recent),
             style = MaterialTheme.typography.titleSmall,
@@ -335,7 +334,7 @@ private fun RecentList(recent: List<HistoryEntry>, onOpen: (HistoryEntry) -> Uni
             Surface(
                 onClick = { onOpen(entry) },
                 color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = recentShape(index, recent.size),
+                shape = segmentShape(index, recent.size),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -349,15 +348,6 @@ private fun RecentList(recent: List<HistoryEntry>, onOpen: (HistoryEntry) -> Uni
             }
         }
     }
-}
-
-/** Big corners at the outer ends of the list, small ones between the items. */
-private fun recentShape(index: Int, count: Int): RoundedCornerShape {
-    val big = 20.dp
-    val small = 6.dp
-    val top = if (index == 0) big else small
-    val bottom = if (index == count - 1) big else small
-    return RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
 }
 
 @Composable
