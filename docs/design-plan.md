@@ -13,6 +13,9 @@ Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has no
 (checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
 `MaterialExpressiveTheme` is internal).
 
+All three steps and the long-press selection in the history are released in v1.0.0 (2026-11-26). The plan is
+complete; proposal C was dropped (see "Not chosen").
+
 ## Why it looked dated
 
 - The start screen is an empty screen with the word "Earacle" and three buttons stacked, two of them plain
@@ -165,5 +168,10 @@ source what the Material 3 version in the Compose BOM offers for selectable list
 ## Not chosen
 
 - **A (tidy)**: too close to what there is.
-- **C (album cover colours)**: needs an image library and loading cover images from the net; songs picked by
-  hand have no cover. Can be added after B if the owner wants it.
+- **C (album cover colours)**: dropped by the owner on 2026-11-26, after v1.0.0. It brings no real benefit for
+  singing along: a large cover takes room from the lyrics, colours taken from each cover would make the
+  readability of the line being sung depend on the cover (point 10 of `docs/karaoke-plan.md` tuned the fill
+  colour for the phone's own palette), songs picked by hand or opened from the history have no cover, and it
+  needs an image library and loading images from the net. The song card already names the song. A small cover
+  thumbnail in the song card, without changing colours, was mentioned as the only variant worth considering, and
+  only if the owner misses it.
