@@ -328,7 +328,8 @@ repository belongs to someone else, these points still apply unless "Project kno
     Step 2 (lyrics screen: song card, emphasized current and next line, floating toolbar; bold start headlines) is
     built (PR #55, works on the owner's phone 2026-11-26); see "As built (step 2)" in the plan.
     Step 3 (search and history: top bar with back arrow, rounded search field, rounded list items) is built
-    (not yet tried on the phone); see "As built (step 3)" in the plan.
+    (PR #56, works on the owner's phone 2026-11-26); see "As built (step 3)" in the plan. Next, decided
+    2026-11-26: long-press selection to delete several history entries, alongside swiping (see the plan).
 - **Rejected options and why:** official ShazamKit for Android (needs a developer token from the paid Apple
   Developer Program; developers reported offsets off by seconds on Android); ACRCloud and AudD (paid after a
   trial or small free quota). Dropped by the owner on 2026-11-25: listening in the background with the screen

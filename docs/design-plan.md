@@ -8,7 +8,7 @@ https://claude.ai/artifact/SznkPjaPNjAG9iNvpcZrg2; a later session can read it w
 
 Step 1 (start screen and listening animation) is built (PR #52; confirmed on the owner's phone 2026-11-25); step 2
 (lyrics screen, and bold start headlines) is built (PR #55; confirmed on the owner's phone 2026-11-26). Step 3
-(search and history) is built, not yet tried on the phone. Step 1 needs
+(search and history) is built (PR #56; works on the owner's phone 2026-11-26). Step 1 needs
 Material 3 1.5.0 (Compose BOM 2026.11.01), because 1.4.0 (BOM 2026.09.00) has none of the Expressive components
 (checked in its sources: `LoadingIndicator`, `MaterialShapes` and `CircularWavyProgressIndicator` are missing,
 `MaterialExpressiveTheme` is internal).
@@ -134,6 +134,14 @@ indicator may stay still.
 - History: "Clear history" moved into the top bar; the separate headline is gone (the title is in the bar). The
   swipe box is clipped to the item's shape, so the red background with the bin is rounded too; the `HistoryRow`
   settle fix stays.
+
+### Next: deleting history entries (decided 2026-11-26)
+
+After trying step 3 the owner asked whether Material 3 Expressive recommends another way to delete an entry. Three
+options were offered: keep swiping (with "Undo"), add a selection mode by long press (tap to add more entries, a
+bin in the top bar deletes all selected, as in Google Photos or Messages), or a three-dot menu per entry. The owner
+chose **swiping and long-press selection together**, to be built in its own session and pull request. Check at the
+source what the Material 3 version in the Compose BOM offers for selectable list items before building.
 
 ## Not chosen
 
