@@ -143,6 +143,25 @@ bin in the top bar deletes all selected, as in Google Photos or Messages), or a 
 chose **swiping and long-press selection together**, to be built in its own session and pull request. Check at the
 source what the Material 3 version in the Compose BOM offers for selectable list items before building.
 
+### As built (selection)
+
+- **What Material 3 offers (checked in the sources of material3 1.5.0, the version in Compose BOM 2026.11.01):**
+  `SegmentedListItem` and `ListItem` have overloads for a plain click, single selection (`selected`) and multi
+  selection (`checked` / `onCheckedChange`, checkbox semantics), each with `onLongClick` and `onLongClickLabel`; none
+  needs an opt-in. A selected item takes `secondaryContainer` and morphs to the `CornerLarge` shape
+  (`ListItemDefaults.shapes`, `segmentedColors`). There is no ready-made selection mode or "contextual" top bar:
+  the mode itself is the app's own.
+- **Rows** (`HistoryRow`): `SegmentedListItem` with the click overload normally and the `checked` overload while
+  selecting; shape from `segmentShape`, container `surfaceContainer` as before. A selected row shows a check mark in a
+  filled circle under the time (owner, after trying it on the phone: the time must stay visible); title and artist
+  are centred vertically. Swiping stays (with "Undo") and is switched off while selecting
+  (`gesturesEnabled`); the snap-back fix for the swipe state stays.
+- **Selection mode:** a long press selects an entry; taps then add or remove entries, and removing the last one ends
+  the mode. The top bar shows "N selected", the arrow ends the selection, and a bin replaces "Clear history". The bin
+  deletes all selected entries at once (`HistoryLog.deleteAll`, the file is rewritten once); one "Undo" puts all of
+  them back at their old places. The system back gesture ends the selection first (`historyBackAction`), then closes
+  the page. The selection is kept over a rotation (`rememberSaveable`) and forgotten when the page closes.
+
 ## Not chosen
 
 - **A (tidy)**: too close to what there is.

@@ -185,7 +185,16 @@ class MainViewModel(
         }
     }
 
-    /** Puts the entry deleted last back where it was. */
+    /** Deletes several entries at once; [undoHistoryDelete] puts all of them back. */
+    fun deleteHistoryEntries(ids: Set<String>) {
+        val log = historyLog ?: return
+        viewModelScope.launch(historyDispatcher) {
+            log.deleteAll(ids)
+            _history.value = log.history
+        }
+    }
+
+    /** Puts the entry (or the entries) deleted last back where they were. */
     fun undoHistoryDelete() {
         val log = historyLog ?: return
         viewModelScope.launch(historyDispatcher) {

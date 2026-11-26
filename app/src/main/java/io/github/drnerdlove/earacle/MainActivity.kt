@@ -247,6 +247,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             entries = history.newestFirst(),
             onOpen = viewModel::openFromHistory,
             onDelete = viewModel::deleteHistoryEntry,
+            onDeleteSelected = viewModel::deleteHistoryEntries,
             onUndoDelete = viewModel::undoHistoryDelete,
             onClear = viewModel::clearHistory,
             onBack = viewModel::closeHistory,

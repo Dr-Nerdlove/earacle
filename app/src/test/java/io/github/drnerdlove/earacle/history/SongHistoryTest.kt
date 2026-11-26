@@ -93,4 +93,26 @@ class SongHistoryTest {
     fun clearEmptiesTheHistory() {
         assertTrue(SongHistory(listOf(entry("a", 1))).clear().entries.isEmpty())
     }
+
+    @Test
+    fun deleteAllRemovesTheGivenEntriesAndIgnoresUnknownIds() {
+        val h = SongHistory(listOf(entry("a", 0), entry("b", 1), entry("c", 2), entry("d", 3)))
+        assertEquals(listOf("b", "d"), ids(h.deleteAll(listOf("a", "c", "zzz"))))
+        assertSame(h, h.deleteAll(listOf("zzz")))
+    }
+
+    @Test
+    fun restoreAllPutsEveryEntryBackWhereItWas() {
+        val h = SongHistory(listOf(entry("a", 0), entry("b", 1), entry("c", 2), entry("d", 3), entry("e", 4)))
+        val removed = listOf("e", "b", "c").map { id -> h.entries[h.indexOf(id)] to h.indexOf(id) }
+        val after = h.deleteAll(listOf("e", "b", "c"))
+        assertEquals(listOf("a", "d"), ids(after))
+        assertEquals(ids(h), ids(after.restoreAll(removed)))
+    }
+
+    @Test
+    fun restoreAllSkipsEntriesThatAreAlreadyThere() {
+        val h = SongHistory(listOf(entry("a", 0), entry("b", 1)))
+        assertEquals(listOf("a", "b"), ids(h.restoreAll(listOf(h.entries[1] to 1))))
+    }
 }

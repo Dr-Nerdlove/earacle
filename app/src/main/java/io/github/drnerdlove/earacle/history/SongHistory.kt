@@ -38,6 +38,19 @@ class SongHistory(val entries: List<HistoryEntry> = emptyList()) {
         return SongHistory(entries.take(at) + entry + entries.drop(at))
     }
 
+    /** Without the entries with these [ids] (unknown ids are ignored). */
+    fun deleteAll(ids: Collection<String>): SongHistory {
+        val gone = ids.toSet()
+        return if (entries.none { it.id in gone }) this else SongHistory(entries.filter { it.id !in gone })
+    }
+
+    /**
+     * With the [removed] entries (each with the index it had, as by [indexOf]) put back: undoes [deleteAll]. They are
+     * restored from the lowest index up, so every entry returns to its old place; entries already present are skipped.
+     */
+    fun restoreAll(removed: List<Pair<HistoryEntry, Int>>): SongHistory =
+        removed.sortedBy { it.second }.fold(this) { history, (entry, index) -> history.restore(entry, index) }
+
     fun clear(): SongHistory = SongHistory()
 
     companion object {

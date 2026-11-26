@@ -18,3 +18,16 @@ fun backAction(isIdle: Boolean, stageShown: Boolean): BackAction? = when {
     !isIdle -> BackAction.GO_HOME
     else -> null
 }
+
+/** What the system back gesture does on the history page. */
+enum class HistoryBackAction {
+    /** Leave the selection mode and stay on the page. */
+    END_SELECTION,
+
+    /** Close the history page. */
+    CLOSE_HISTORY,
+}
+
+/** Back ends a running selection first; only without one it closes the history page. */
+fun historyBackAction(selecting: Boolean): HistoryBackAction =
+    if (selecting) HistoryBackAction.END_SELECTION else HistoryBackAction.CLOSE_HISTORY
