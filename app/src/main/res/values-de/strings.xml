@@ -5,7 +5,8 @@
     <string name="start_headline">Was läuft gerade?</string>
     <string name="hint_idle">Tippe auf den Knopf, um das Lied zu erkennen, das gerade in der Nähe läuft.</string>
     <string name="status_listening">Höre zu…</string>
-    <string name="status_relistening">Hört mit…</string>
+    <string name="status_relistening">Hört mit</string>
+    <string name="lyrics_go_home">Zurück zum Start</string>
     <string name="hint_listening">Halte das Handy nah an die Musik.</string>
     <string name="status_recognizing">Erkenne…</string>
     <string name="status_not_found">Das Lied wurde nicht erkannt. Geh näher an die Musik heran und versuche es nochmal.</string>

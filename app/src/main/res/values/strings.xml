@@ -6,7 +6,8 @@
     <string name="start_headline">What’s playing?</string>
     <string name="hint_idle">Tap the button to recognize the song that is playing nearby.</string>
     <string name="status_listening">Listening…</string>
-    <string name="status_relistening">Listening along…</string>
+    <string name="status_relistening">Listening along</string>
+    <string name="lyrics_go_home">Back to start</string>
     <string name="hint_listening">Hold the phone near the music.</string>
     <string name="status_recognizing">Recognizing…</string>
     <string name="status_not_found">This song was not recognized. Move closer to the music and try again.</string>

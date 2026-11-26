@@ -43,6 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.drnerdlove.earacle.history.DayKind
@@ -170,6 +171,8 @@ private fun Headline(state: UiState) {
             },
         ),
         style = MaterialTheme.typography.displaySmallEmphasized,
+        // The emphasized style alone looks like the normal weight under MaterialTheme (no MaterialExpressiveTheme).
+        fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
     )
 }
