@@ -20,13 +20,13 @@ here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 
 ## Status
 
-**Early stage (version 0.9.0).** Earacle recognizes a song from the microphone, shows its title, artist and
+**Version 1.0.0.** Earacle recognizes a song from the microphone, shows its title, artist and
 position, and shows the synced lyrics with the current line highlighted and filled word by word. It keeps
 listening along and follows song changes, but only while the app is open; the screen stays on meanwhile.
 Listening in the background (with the screen off) is not planned. All ten karaoke features of
 [`docs/karaoke-plan.md`](docs/karaoke-plan.md) are built (tap to sync, countdown, line fill, word timing,
 backing vocals, stage mode, search by hand, history, lyricsfile word times, stronger fill colour) and work on
-the author's phone. The app is made for one phone and one person's use; expect rough edges.
+the author's phone. The interface follows Material 3 Expressive ([`docs/design-plan.md`](docs/design-plan.md)). The app is made for one phone and one person's use; expect rough edges.
 
 ## Features
 
