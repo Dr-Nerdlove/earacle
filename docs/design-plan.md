@@ -57,7 +57,7 @@ complete; proposal C was dropped (see "Not chosen").
 - In the middle the big recognize button: a Material 3 Expressive shape with a wavy edge (9-scallop "cookie",
   `MaterialShapes.Cookie9Sided` if available), colour `primary`, the microphone icon in `onPrimary`. The button
   has an accessible label ("Recognize song" / "Lied erkennen").
-- Below, "Recently heard" / "Zuletzt gehört": the last two or three songs of the history as rounded list items
+- Below, "Recently heard" / "Zuletzt gehört": the last two songs of the history (three until 2026-11-27, owner's choice) as rounded list items
   (title, artist, when), opening like an entry of the history page. Hidden when the history is empty.
 - The not-recognized, error and permission messages appear on this screen as now, in the new style.
 
