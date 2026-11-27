@@ -53,7 +53,7 @@ the author's phone. The interface follows Material 3 Expressive ([`docs/design-p
   entry. Tap the line being sung to start the clock there; from then on everything works as for a recognized
   song, except that the app does not listen along
 - Song history: every recognized song and every song picked by hand is listed on a page of its own (clock icon in the
-  search bar of the start screen, which also shows the last three songs under "Recently heard"; clock button next
+  search bar of the start screen, which also shows the last two songs under "Recently heard"; clock button next
   to "Try again"), newest first, grouped by day, with the time.
   Tap an entry to open its lyrics again (exactly the version that was shown, then tap the line being sung);
   swipe an entry to the side to delete it (with "Undo"), press and hold an entry to select several and delete

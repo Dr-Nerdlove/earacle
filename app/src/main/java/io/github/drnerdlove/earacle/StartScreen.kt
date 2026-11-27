@@ -55,7 +55,7 @@ import java.time.ZoneId
 import java.util.Date
 
 /** How many songs of the history the start screen shows under "Recently heard". */
-const val START_RECENT_COUNT = 3
+const val START_RECENT_COUNT = 2
 
 /** Size of the recognize button, the ring and the loading indicator: one box, so nothing jumps between phases. */
 private val ElementSize = 168.dp
