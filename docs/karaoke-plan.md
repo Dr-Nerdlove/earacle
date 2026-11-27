@@ -247,6 +247,8 @@ parentheses part as not backing.
 `MainActivity.kt`, `lyricText` builds the `AnnotatedString` (size 0.75 em, muted colour) for every line, including
 the line being sung: there the backing part keeps its muted colour in the already sung part too, so it does not
 light up like the lead; the fill still runs over the same text. No new texts, so nothing to translate.
+Changed on 2026-11-27 (owner's wish): backing vocals keep the line's colour instead of the muted one, so in the
+line being sung they fill in the highlight colour like the lead; they stay at 0.75 em.
 
 ## 6. Stage mode
 
