@@ -717,10 +717,9 @@ private fun ColumnScope.SyncedLyrics(
                     } else if (isCurrent && !isBlank) {
                         FillingLine(lines, index, positionAt, currentLineStyle())
                     } else {
-                        val muted = MaterialTheme.colorScheme.onSurfaceVariant
                         val isUpcoming = index == upcoming && !isBlank
                         Text(
-                            text = if (isBlank) AnnotatedString("♪") else lyricText(line.text, muted),
+                            text = if (isBlank) AnnotatedString("♪") else lyricText(line.text),
                             style = when {
                                 isCurrent -> currentLineStyle()
                                 isUpcoming -> MaterialTheme.typography.titleLarge
@@ -761,11 +760,14 @@ private fun currentLineStyle(): TextStyle = MaterialTheme.typography.headlineSma
 /** Size of backing vocals (text in parentheses) relative to the lead text. */
 private val BackingTextSize = 0.75.em
 
-/** [text] with its backing vocals ([splitBacking]) smaller and in [mutedColor]; the characters are unchanged. */
-private fun lyricText(text: String, mutedColor: Color): AnnotatedString = buildAnnotatedString {
+/**
+ * [text] with its backing vocals ([splitBacking]) smaller; they keep the line's colour, so in the line being sung
+ * they fill like the lead. The characters are unchanged.
+ */
+private fun lyricText(text: String): AnnotatedString = buildAnnotatedString {
     for (segment in splitBacking(text)) {
         if (segment.backing) {
-            withStyle(SpanStyle(fontSize = BackingTextSize, color = mutedColor)) { append(segment.text) }
+            withStyle(SpanStyle(fontSize = BackingTextSize)) { append(segment.text) }
         } else {
             append(segment.text)
         }
@@ -796,8 +798,8 @@ private fun FillingLine(
     }
     val plain = lines[index].text
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    // Backing vocals stay muted and small even in the part already sung; the text itself is unchanged.
-    val text = lyricText(plain, muted)
+    // Backing vocals are smaller but fill like the lead; the text itself is unchanged.
+    val text = lyricText(plain)
     Text(
         text = text,
         style = style,
@@ -1010,7 +1012,7 @@ private fun ColumnScope.StageLyrics(
             shown.nextIndex?.let { next ->
                 Spacer(Modifier.height(dot))
                 Text(
-                    text = lyricText(lines[next].text, muted),
+                    text = lyricText(lines[next].text),
                     style = nextStyle,
                     // Already a little brighter while the dots count down, as on the normal screen.
                     color = if (pause != null) MaterialTheme.colorScheme.onSurface else muted,

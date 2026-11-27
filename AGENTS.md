@@ -289,7 +289,8 @@ repository belongs to someone else, these points still apply unless "Project kno
     jumps word by word when a line has them, else uses the even pace. The enhanced-LRC `<mm:ss.xx>` tags are not checked on real data (LRCLIB had none
     on 2026-11-24), only by tests; word times from the lyricsfile (point 9) are confirmed on the phone. A mid-line `[..]` stamp used to stay in the text; that old test was replaced.
   - Backing vocals (built, point 5, `lyrics/Backing.kt`): text in balanced, non-nested `( ... )` is drawn at
-    0.75 em in the muted colour (`lyricText` in `MainActivity.kt`), also in the line being sung. Unbalanced or
+    0.75 em (`lyricText` in `MainActivity.kt`), also in the line being sung; it keeps the line's colour, so it fills
+    like the lead (muted until 2026-11-27, changed at the owner's wish). Unbalanced or
     nested parentheses leave the whole line normal. Seen on a phone screenshot (owner, 2026-11-25).
   - Stage mode (built, point 6, `lyrics/StageMode.kt`, `StagePreferences.kt`, `StageContent` in `MainActivity.kt`):
     black, always dark theme; current line 32-64 sp (5 steps, `A−` / `A+`), next line at 0.6 of it, other lines
