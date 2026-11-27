@@ -20,7 +20,7 @@ here because the lyrics are copyrighted; in the app they are readable.</sub></p>
 
 ## Status
 
-**Version 1.0.0.** Earacle recognizes a song from the microphone, shows its title, artist and
+**Version 1.0.1.** Earacle recognizes a song from the microphone, shows its title, artist and
 position, and shows the synced lyrics with the current line highlighted and filled word by word. It keeps
 listening along and follows song changes, but only while the app is open; the screen stays on meanwhile.
 Listening in the background (with the screen off) is not planned. All ten karaoke features of
